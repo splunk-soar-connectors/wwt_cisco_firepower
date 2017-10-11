@@ -8,7 +8,7 @@
      21 November 2016  |  1.1 - initial release
      See github page for updates and revision history.
 
-     Copyright (c) 2016 World Wide Technology, Inc.
+     Copyright (c) 2016-2017 World Wide Technology, Inc.
 
      This program is free software: you can redistribute it and/ori
      modify it under the terms of the GNU Affero General Public License

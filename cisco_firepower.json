@@ -1,18 +1,18 @@
 {
     "appid": "F501CF42-46D4-4023-A156-208640865AA8",
     "name": "Cisco Firepower",
-    "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL.",
+    "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
     "publisher": "World Wide Technology",
     "package_name": "phantom_cisco_firepower_1.2",
     "type": "firewall",
-    "license": "Copyright (c) World Wide Technology, Inc. 2016",
+    "license": "Copyright (c) World Wide Technology, Inc. 2016-2017",
     "main_module": "cisco_firepower_connector.pyc",
-    "app_version": "1.2.1",
-    "utctime_updated": "2016-12-28T09:02:18.000000Z",
+    "app_version": "1.2.2",
+    "utctime_updated": "2017-10-11T09:02:18.000000Z",
     "product_vendor": "Cisco Systems",
     "product_name": "Cisco Firepower",
     "product_version_regex": ".*",
-    "min_phantom_version": "1.0.240",
+    "min_phantom_version": "3.0.264",
     "logo": "cisco.png",
     "configuration": {
         "firepower_host": {
@@ -107,7 +107,7 @@
                     ],
                     "description": "IP/network to block (X.X.X.X/NM)",
                     "data_type": "string",
-                    "primary": "true",
+                    "primary": true,
                     "required": true
                 }
             },
@@ -155,7 +155,7 @@
                     ],
                     "description": "IP/network to unBlock (X.X.X.X/NM)",
                     "data_type": "string",
-                    "primary": "true",
+                    "primary": true,
                     "required": true
                 }
             },
