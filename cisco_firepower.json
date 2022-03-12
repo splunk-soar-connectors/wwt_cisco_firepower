@@ -6,13 +6,14 @@
     "package_name": "phantom_cisco_firepower_1.2",
     "type": "firewall",
     "license": "Copyright (c) World Wide Technology, Inc. 2016-2017",
-    "main_module": "cisco_firepower_connector.pyc",
+    "main_module": "cisco_firepower_connector.py",
     "app_version": "1.2.4",
     "utctime_updated": "2022-01-07T21:29:07.000000Z",
     "product_vendor": "Cisco Systems",
     "product_name": "Cisco Firepower",
     "product_version_regex": ".*",
     "min_phantom_version": "3.0.264",
+    "python_version": "3",
     "logo": "cisco.png",
     "configuration": {
         "firepower_host": {
