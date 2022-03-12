@@ -2,19 +2,20 @@
     "appid": "F501CF42-46D4-4023-A156-208640865AA8",
     "name": "Cisco Firepower",
     "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
-    "publisher": "World Wide Technology",
-    "package_name": "phantom_cisco_firepower_1.2",
+    "publisher": "Splunk",
+    "package_name": "phantom_cisco_firepower",
     "type": "firewall",
-    "license": "Copyright (c) World Wide Technology, Inc. 2016-2017",
+    "license": "Copyright (c) 2022 Splunk Inc.",
     "main_module": "cisco_firepower_connector.py",
-    "app_version": "1.2.4",
+    "app_version": "2.0.0",
     "utctime_updated": "2022-01-07T21:29:07.000000Z",
     "product_vendor": "Cisco Systems",
     "product_name": "Cisco Firepower",
     "product_version_regex": ".*",
-    "min_phantom_version": "3.0.264",
+    "min_phantom_version": "5.1.0",
     "python_version": "3",
-    "logo": "cisco.png",
+    "logo": "logo_cisco.svg",
+    "logo_dark": "logo_cisco_dark.svg",
     "configuration": {
         "firepower_host": {
             "description": "Device IP/Hostname",
@@ -195,23 +196,63 @@
         "wheel": [
             {
                 "module": "certifi",
-                "input_file": "wheels/certifi-2021.10.8-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/certifi-2021.10.8-py2.py3-none-any.whl"
             },
             {
                 "module": "chardet",
-                "input_file": "wheels/chardet-3.0.4-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/chardet-3.0.4-py2.py3-none-any.whl"
             },
             {
                 "module": "idna",
-                "input_file": "wheels/idna-2.10-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/idna-2.10-py2.py3-none-any.whl"
+            },
+            {
+                "module": "netaddr",
+                "input_file": "wheels/shared/netaddr-0.7.18-py2.py3-none-any.whl"
             },
             {
                 "module": "requests",
-                "input_file": "wheels/requests-2.25.0-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/requests-2.25.0-py2.py3-none-any.whl"
+            },
+            {
+                "module": "simplejson",
+                "input_file": "wheels/py36/simplejson-3.17.2-cp36-cp36m-manylinux2010_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
             },
             {
                 "module": "urllib3",
-                "input_file": "wheels/urllib3-1.26.7-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/urllib3-1.26.8-py2.py3-none-any.whl"
+            }
+        ]
+    },
+    "pip39_dependencies": {
+        "wheel": [
+            {
+                "module": "certifi",
+                "input_file": "wheels/shared/certifi-2021.10.8-py2.py3-none-any.whl"
+            },
+            {
+                "module": "chardet",
+                "input_file": "wheels/shared/chardet-3.0.4-py2.py3-none-any.whl"
+            },
+            {
+                "module": "idna",
+                "input_file": "wheels/shared/idna-2.10-py2.py3-none-any.whl"
+            },
+            {
+                "module": "netaddr",
+                "input_file": "wheels/shared/netaddr-0.7.18-py2.py3-none-any.whl"
+            },
+            {
+                "module": "requests",
+                "input_file": "wheels/shared/requests-2.25.0-py2.py3-none-any.whl"
+            },
+            {
+                "module": "simplejson",
+                "input_file": "wheels/py39/simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            },
+            {
+                "module": "urllib3",
+                "input_file": "wheels/shared/urllib3-1.26.8-py2.py3-none-any.whl"
             }
         ]
     }

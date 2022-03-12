@@ -2,12 +2,12 @@
 # Phantom App imports
 #
 import phantom.app as phantom
-from phantom.base_connector import BaseConnector
-from phantom.action_result import ActionResult
-
-import simplejson as json
 import requests
+import simplejson as json
 from netaddr import IPNetwork
+from phantom.action_result import ActionResult
+from phantom.base_connector import BaseConnector
+
 from cisco_firepower_consts import *
 
 
