@@ -1,7 +1,7 @@
 {
     "appid": "F501CF42-46D4-4023-A156-208640865AA8",
     "name": "Cisco Firepower",
-    "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
+    "description": "This app connects to Cisco Firepower database to fetch signatures and interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
     "publisher": "Splunk",
     "package_name": "phantom_cisco_firepower",
     "type": "firewall",
@@ -23,9 +23,11 @@
             "data_type": "string",
             "required": true
         },
-        "ph": {
-            "data_type": "ph",
-            "order": 1
+        "port": {
+            "description": "JDBC Port to connect to",
+            "data_type": "numeric",
+            "order": 1,
+            "default": 2000
         },
         "username": {
             "description": "User with access to the Firepower node",
@@ -190,10 +192,169 @@
                 }
             ],
             "versions": "EQ(*)"
+        },
+        {
+            "action": "get signature details",
+            "description": "Get detailed information about a signature",
+            "verbose": "One of the <b>snort_id</b>, <b>bugtraq_id</b> or <b>svid</b> parameters need to be specified. The action will first check for the presence of an id to use it and ignore the rest in the following order: <ul><li><b>snort_id</b><br>The action will use this id if specified and ignore the rest while making the query.</li><li><b>bugtraq_id</b><br>If snort_id is not passed, the action will use the bugtraq_id for the query if specified.</li><li><b>svid</b><br>If both snort_id and bugtraq_id are not specified, the action proceeds to check the presence of the svid and uses it for the query.</li></ul>",
+            "type": "investigate",
+            "identifier": "get_signature_info",
+            "read_only": true,
+            "parameters": {
+                "snort_id": {
+                    "data_type": "string",
+                    "order": 0,
+                    "description": "Snort ID",
+                    "primary": true,
+                    "contains": [
+                        "snort id"
+                    ]
+                },
+                "bugtraq_id": {
+                    "data_type": "string",
+                    "order": 1,
+                    "primary": true,
+                    "description": "Bugtraq ID",
+                    "contains": [
+                        "bugtraq id"
+                    ]
+                },
+                "svid": {
+                    "data_type": "string",
+                    "order": 2,
+                    "primary": true,
+                    "description": "Vuln ID",
+                    "contains": [
+                        "vuln id"
+                    ]
+                }
+            },
+            "render": {
+                "width": 12,
+                "title": "Get Signature Info",
+                "type": "table",
+                "height": 5
+            },
+            "output": [
+                {
+                    "data_path": "action_result.data.*.snort_id",
+                    "data_type": "numeric",
+                    "column_name": "Snort ID",
+                    "column_order": 0,
+                    "contains": [
+                        "snort id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.title",
+                    "data_type": "string",
+                    "column_name": "Title",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.data.*.rna_vuln_id",
+                    "data_type": "numeric",
+                    "column_name": "Vuln ID",
+                    "column_order": 2,
+                    "contains": [
+                        "vuln id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.bugtraq_id",
+                    "data_type": "numeric",
+                    "column_name": "Bugtraq ID",
+                    "column_order": 3,
+                    "contains": [
+                        "bugtraq id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.available_exploits",
+                    "data_type": "string",
+                    "column_name": "Available Exploits",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.data.*.remote",
+                    "data_type": "string",
+                    "column_name": "Remote Exploitation",
+                    "column_order": 5
+                },
+                {
+                    "data_path": "action_result.data.*.exploit",
+                    "data_type": "string",
+                    "column_name": "Exploit Info",
+                    "column_order": 6
+                },
+                {
+                    "data_path": "action_result.data.*.short_description",
+                    "data_type": "string",
+                    "column_name": "Short Description",
+                    "column_order": 7
+                },
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.total_signatures",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.snort_id",
+                    "data_type": "string",
+                    "contains": [
+                        "snort id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.bugtraq_id",
+                    "data_type": "string",
+                    "contains": [
+                        "bugtraq id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.svid",
+                    "data_type": "string",
+                    "contains": [
+                        "vuln id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                }
+            ],
+            "versions": "EQ(*)"
         }
     ],
     "pip_dependencies": {
         "wheel": [
+            {
+                "module": "JPype1",
+                "input_file": "wheels/py36/JPype1-1.3.0-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            },
+            {
+                "module": "JayDeBeApi",
+                "input_file": "wheels/py3/JayDeBeApi-1.2.3-py3-none-any.whl"
+            },
             {
                 "module": "certifi",
                 "input_file": "wheels/shared/certifi-2021.10.8-py2.py3-none-any.whl"
@@ -219,6 +380,10 @@
                 "input_file": "wheels/py36/simplejson-3.17.2-cp36-cp36m-manylinux2010_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
             },
             {
+                "module": "typing_extensions",
+                "input_file": "wheels/py3/typing_extensions-4.1.1-py3-none-any.whl"
+            },
+            {
                 "module": "urllib3",
                 "input_file": "wheels/shared/urllib3-1.26.8-py2.py3-none-any.whl"
             }
@@ -226,6 +391,14 @@
     },
     "pip39_dependencies": {
         "wheel": [
+            {
+                "module": "JPype1",
+                "input_file": "wheels/py39/JPype1-1.3.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            },
+            {
+                "module": "JayDeBeApi",
+                "input_file": "wheels/py3/JayDeBeApi-1.2.3-py3-none-any.whl"
+            },
             {
                 "module": "certifi",
                 "input_file": "wheels/shared/certifi-2021.10.8-py2.py3-none-any.whl"
