@@ -1,7 +1,3 @@
-
-import os
-
-import jaydebeapi
 import phantom.app as phantom
 import requests
 import simplejson as json
@@ -38,7 +34,6 @@ class FP_Connector(BaseConnector):
         self.netgroup_uuid = ""
         self.headers = HEADERS
         self.verify = False
-        self.__conn = None
 
     def initialize(self):
         """
@@ -60,15 +55,10 @@ class FP_Connector(BaseConnector):
             return self.set_status(phantom.APP_ERROR, STATE_FILE_CORRUPT_ERR)
 
         self.firepower_host = config["firepower_host"]
-        port = config["port"]
         self.username = config["username"]
         self.password = config["password"]
         self.domain_name = config["domain_name"]
         self.network_group_object = config["network_group_object"]
-
-        ret_val, self.port = self._validate_integer(self, port, "JDBC Port asset configuration")
-        if phantom.is_fail(ret_val):
-            return self.get_status()
 
         force = True if self.get_action_identifier() == "test connectivity" else False
         ret_val = self._get_token(self, force=force)
@@ -78,17 +68,6 @@ class FP_Connector(BaseConnector):
         ret_val = self._get_group_object_uuid()
         if phantom.is_fail(ret_val):
             return self.get_status()
-
-        app_dir = os.path.dirname(os.path.realpath(__file__))
-
-        # install the certificate
-        phantom.run_ext_command("java -Djava.class.path={0} InstallCert {1}".format(app_dir, self.firepower_host))
-
-        # Create the CLASSPATH variable value
-        classpath = ':'.join([os.path.join(app_dir.strip(), 'lib', x.strip()) for x in JDBC_DRIVER_JAR_FILES])
-        os.environ['CLASSPATH'] = classpath
-
-        self.debug_print("Set Classpath as:", classpath)
 
         return phantom.APP_SUCCESS
 
@@ -295,21 +274,14 @@ class FP_Connector(BaseConnector):
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
 
-        self.save_progress("Testing API connectivity")
+        self.save_progress("Testing connectivity")
 
-        if not self.token:
-            self.save_progress("API connectivity test failed")
-            return action_result.set_status(phantom.APP_ERROR)
-        self.save_progress("API connectivity test passed")
+        if self.token:
+            self.save_progress("Connectivity test passed")
+            return action_result.set_status(phantom.APP_SUCCESS)
 
-        self.save_progress("Testing database connectivity")
-
-        if phantom.is_fail(self._connect(action_result)):
-            self.save_progress("Database connectivity test failed")
-            return action_result.get_status()
-
-        self.save_progress("Database connectivity test passed")
-        return self.set_status_save_progress(phantom.APP_SUCCESS)
+        self.save_progress("Connectivity test failed")
+        return action_result.set_status(phantom.APP_ERROR)
 
     def list_networks_in_object(self, param):
         """ Lists currently blocked networks """
@@ -406,96 +378,6 @@ class FP_Connector(BaseConnector):
 
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted {0}".format(self.destination_network))
 
-    def _validate_integer(self, action_result, parameter, key, allow_zero=False):
-        """ Validates an integer """
-        if parameter is not None:
-            try:
-                if not float(parameter).is_integer():
-                    return action_result.set_status(phantom.APP_ERROR, INVALID_INTEGER_ERR_MSG.format(key)), None
-
-                parameter = int(parameter)
-            except:
-                return action_result.set_status(phantom.APP_ERROR, INVALID_INTEGER_ERR_MSG.format(key)), None
-
-            if parameter < 0:
-                return action_result.set_status(phantom.APP_ERROR, NEGATIVE_INTEGER_ERR_MSG.format(key)), None
-
-            if not allow_zero and parameter == 0:
-                return action_result.set_status(phantom.APP_ERROR, ZERO_INTEGER_ERR_MSG.format(key)), None
-
-        return phantom.APP_SUCCESS, parameter
-
-    def _connect(self, action_result):
-        """ Establishes a connection with the database """
-        self.debug_print("GOT Classpath as:", os.getenv('CLASSPATH'))
-
-        self.save_progress(phantom.APP_PROG_CONNECTING_TO_ELLIPSES, self.firepower_host)
-
-        try:
-            self.__conn = jaydebeapi.connect(
-                JDBC_DRIVER_CLASS,
-                JDBC_DB_URL.format(device=self.firepower_host, port=self.port),
-                [self.username, self.password]
-            )
-        except Exception as e:
-            return action_result.set_status(phantom.APP_ERROR, ERR_CONNECT, e)
-
-        if self.__conn is None:
-            return action_result.set_status(phantom.APP_ERROR, ERR_CONNECT)
-
-        return phantom.APP_SUCCESS
-
-    def get_siginfo(self, param):
-        """ Gets signature information """
-
-        # Add an action result to the App Run
-        action_result = ActionResult(dict(param))
-        self.add_action_result(action_result)
-
-        snort_id = param.get(JSON_SNORT_ID)
-        bugtraq_id = param.get(JSON_BUGTRAQ_ID)
-        svid = param.get(JSON_SVID)
-
-        query = None
-        select_clause = "select {0} from rna_vuln".format(','.join(SIG_INFO_COLUMNS))
-
-        if snort_id is not None:
-            query = "{0} where snort_id={1}".format(select_clause, snort_id)
-        elif bugtraq_id is not None:
-            query = "{0} where bugtraq_id={1}".format(select_clause, bugtraq_id)
-        elif svid is not None:
-            query = "{0} where rna_vuln_id={1}".format(select_clause, svid)
-        else:
-            param_names = "{0}, {1} or {2}".format(JSON_SNORT_ID, JSON_BUGTRAQ_ID, JSON_SVID)
-            return action_result.set_status(phantom.APP_ERROR, ERR_NO_PARAMS_PRESENT, param_names=param_names)
-
-        if phantom.is_fail(self._connect(action_result)):
-            return self.get_status()
-
-        curs = self.__conn.cursor()
-
-        try:
-            curs.execute(query)
-        except Exception as e:
-            return action_result.set_status(phantom.APP_ERROR, ERR_EXECUTING_QUERY, e)
-
-        try:
-            results = curs.fetchall()
-        except Exception:
-            return action_result.set_status(phantom.APP_ERROR, ERR_FETCHING_RESULTS)
-
-        if results:
-            action_result.update_summary({JSON_TOTAL_SIGS: len(results)})
-
-        if len(results) == 0:
-            return action_result.set_status(phantom.APP_ERROR, SUCC_NO_MATCH)
-
-        for result in results:
-            result_dict = {x: y for x, y in zip(SIG_INFO_COLUMNS, result)}
-            action_result.add_data(result_dict)
-
-        return action_result.set_status(phantom.APP_SUCCESS)
-
     def handle_action(self, param):
         """
         This function implements the main functionality of the AppConnector.
@@ -519,8 +401,7 @@ class FP_Connector(BaseConnector):
             "test connectivity": self.test_connectivity,
             "list_networks": self.list_networks_in_object,
             "block_ip": self.add_to_network_object,
-            "unblock_ip": self.del_from_network_object,
-            "get_signature_info": self.get_siginfo
+            "unblock_ip": self.del_from_network_object
         }
 
         run_action = supported_actions[action_id]
