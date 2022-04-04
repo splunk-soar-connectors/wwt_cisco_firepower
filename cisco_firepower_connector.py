@@ -118,8 +118,8 @@ class FP_Connector(BaseConnector):
                 if item["name"] == self.network_group_object:
                     self.netgroup_uuid = item["id"]
         except Exception as e:
-            message = "Received unexpected response from the server. {0}".format(str(e))
-            self.debug_print(message)
+            message = "An error occurred while processing network groups"
+            self.debug_print("{}. {}".format(message, str(e)))
             return self.set_status(phantom.APP_ERROR, message)
 
         return phantom.APP_SUCCESS
