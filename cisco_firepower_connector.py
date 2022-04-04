@@ -1,6 +1,6 @@
 # File: cisco_firepower_connector.py
 #
-# Copyright (c) 2016-2022 Splunk Inc.
+# Copyright (c) 2021-2022 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ class FP_Connector(BaseConnector):
         self.domain_name = config["domain_name"]
         self.network_group_object = config["network_group_object"]
 
-        force = True if self.get_action_identifier() == "test connectivity" else False
+        force = True if self.get_action_identifier() == "test_connectivity" else False
         ret_val = self._get_token(self, force=force)
         if phantom.is_fail(ret_val):
             return self.get_status()
@@ -210,11 +210,10 @@ class FP_Connector(BaseConnector):
             if result.status_code == 401 and first_try:
                 ret_val = self._get_token(action_result, True)
                 if phantom.is_fail(ret_val):
-                    return self.get_status(), None
+                    return action_result.get_status(), None
 
                 return self._api_run(method, resource, action_result, json_body, headers_only, first_try=False)
 
-            self.save_progress("Received status code: {}".format(result.status_code))
             message = "Error from server. Status Code: {0} Data from server: {1}".format(
                 result.status_code, result.text.replace("{", "{{").replace("}", "}}")
             )
@@ -429,7 +428,7 @@ class FP_Connector(BaseConnector):
         self.debug_print("action_id: {}".format(action_id))
 
         supported_actions = {
-            "test connectivity": self._handle_test_connectivity,
+            "test_connectivity": self._handle_test_connectivity,
             "list_networks": self._handle_list_networks,
             "block_ip": self._handle_block_ip,
             "unblock_ip": self._handle_unblock_ip
