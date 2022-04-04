@@ -1,3 +1,18 @@
+# File: cisco_firepower_connector.py
+#
+# Copyright (c) 2016-2022 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions
+# and limitations under the License.
+
 import phantom.app as phantom
 import requests
 import simplejson as json
@@ -26,7 +41,6 @@ class FP_Connector(BaseConnector):
         self.domain_name = ""
         self.destination_network = ""
         self.destination_dict = {}
-        self.body = ""
         self.token = ""
         self.api_path = ""
         self.network_group_list = []
@@ -34,6 +48,7 @@ class FP_Connector(BaseConnector):
         self.netgroup_uuid = ""
         self.headers = HEADERS
         self.verify = False
+        self.nothing_to_deploy = False
 
     def initialize(self):
         """
@@ -133,67 +148,72 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         try:
-            for item in response["items"]:
+            items = response.get("items")
+            if not items:
+                self.nothing_to_deploy = True
+                return phantom.APP_SUCCESS
+            for item in items:
                 self.firepower_deployable_devices.append(
                     {"name": item["device"]["name"],
                      "id": item["device"]["id"]})
         except Exception as e:
-            message = "Received unexpected response from the server. {0}".format(str(e))
-            self.debug_print(message)
+            message = "An error occurred while processing deployable devices"
+            self.debug_print("{}. {}".format(message, str(e)))
             return action_result.set_status(phantom.APP_ERROR, message)
 
         return phantom.APP_SUCCESS
 
+    def _get_headers(self, headers):
+        self.token = headers.get("X-auth-access-token")
+        self.domain_uuid = headers.get("DOMAIN_UUID")
+        self.headers.update({"X-auth-access-token": self.token})
+
     def _get_token(self, action_result, force=False):
         """ Gets token """
-        if not force and "X-auth-access-token" in self._state and "DOMAIN_UUID" in self._state:
-            headers = self._state
+        token = self._state.get("X-auth-access-token")
+        domain_id = self._state.get("DOMAIN_UUID")
+
+        if not force and token and domain_id:
+            self._get_headers(self._state)
         else:
-            ret_val, headers = self._api_run("post", TOKEN_ENDPOINT, action_result, True, False)
+            ret_val, headers = self._api_run("post", TOKEN_ENDPOINT, action_result, headers_only=True, first_try=False)
             if phantom.is_fail(ret_val):
                 self._state.pop("X-auth-access-token", None)
                 self._state.pop("DOMAIN_UUID", None)
                 return action_result.get_status()
 
-        self.token = headers.get("X-auth-access-token")
-        self.domain_uuid = headers.get("DOMAIN_UUID")
-        self.headers.update({"X-auth-access-token": self.token})
+            self._get_headers(headers)
+            self._state["X-auth-access-token"] = self.token
+            self._state["DOMAIN_UUID"] = self.domain_uuid
 
-        self._state["X-auth-access-token"] = self.token
-        self._state["DOMAIN_UUID"] = self.domain_uuid
         return phantom.APP_SUCCESS
 
-    def _api_run(self, method, resource, action_result, headers_only=False, first_try=True):
+    def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True):
         """ Makes a REST call to the API """
         request_method = getattr(requests, method)
         url = "https://{0}{1}".format(self.firepower_host, resource)
-        if self.body:
+        if json_body:
             self.headers.update({"Content-type": "application/json"})
-            result = request_method(
-                url,
-                auth=requests.auth.HTTPBasicAuth(
-                    self.username,
-                    self.password),
-                headers=self.headers,
-                data=json.dumps(self.body),
-                verify=self.verify
-            )
-        else:
-            result = request_method(
-                url,
-                auth=requests.auth.HTTPBasicAuth(
-                    self.username,
-                    self.password),
-                headers=self.headers,
-                verify=self.verify
-            )
+
+        result = request_method(
+            url,
+            auth=requests.auth.HTTPBasicAuth(
+                self.username,
+                self.password),
+            headers=self.headers,
+            json=json_body,
+            verify=self.verify,
+            timeout=DEFAULT_REQUEST_TIMEOUT
+        )
 
         if not (200 <= result.status_code < 399):
             if result.status_code == 401 and first_try:
                 ret_val = self._get_token(action_result, True)
                 if phantom.is_fail(ret_val):
                     return self.get_status(), None
-                return self._api_run(method, resource, action_result, headers_only, False)
+
+                return self._api_run(method, resource, action_result, json_body, headers_only, first_try=False)
+
             self.save_progress("Received status code: {}".format(result.status_code))
             message = "Error from server. Status Code: {0} Data from server: {1}".format(
                 result.status_code, result.text.replace("{", "{{").replace("}", "}}")
@@ -245,12 +265,16 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
+        if self.nothing_to_deploy:
+            self.debug_print("Nothing to deploy")
+            return phantom.APP_SUCCESS
+
         deployable_device_UUIDs = [device["id"] for device in self.firepower_deployable_devices]
 
         self.api_path = DEPLOYMENT_REQUESTS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
 
-        self.body = {
+        body = {
             "type": "DeploymentRequest",
             "version": "0",
             "forceDeploy": True,
@@ -258,14 +282,15 @@ class FP_Connector(BaseConnector):
             "deviceList": (deployable_device_UUIDs),
         }
 
-        ret_val, response = self._api_run("post", self.api_path, action_result)
+        ret_val, response = self._api_run("post", self.api_path, action_result, body)
+
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
         self.network_group_list = response.get("literals")
         return phantom.APP_SUCCESS
 
-    def test_connectivity(self, param):
+    def _handle_test_connectivity(self, param):
         """
         Called when the user presses the test connectivity
         button on the Phantom UI.
@@ -283,8 +308,10 @@ class FP_Connector(BaseConnector):
         self.save_progress("Connectivity test failed")
         return action_result.set_status(phantom.APP_ERROR)
 
-    def list_networks_in_object(self, param):
+    def _handle_list_networks(self, param):
         """ Lists currently blocked networks """
+        self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
+
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
@@ -297,6 +324,7 @@ class FP_Connector(BaseConnector):
         # Even if the query was successfull data might not be available
         if not self.network_group_list:
             return action_result.set_status(phantom.APP_ERROR, "API Request returned no data")
+
         for net in self.network_group_list:
             action_result.add_data({"network": net["value"]})
         summary = {"total_routes": len(self.network_group_list)}
@@ -304,8 +332,10 @@ class FP_Connector(BaseConnector):
 
         return action_result.set_status(phantom.APP_SUCCESS)
 
-    def add_to_network_object(self, param):
+    def _handle_block_ip(self, param):
         """ Blocks an IP network """
+        self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
+
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
@@ -321,15 +351,16 @@ class FP_Connector(BaseConnector):
             self._gen_network_dict()
         else:
             return action_result.set_status(phantom.APP_ERROR, "Invalid IP: {0}".format(self.destination_network))
+
         self.network_group_list.append(self.destination_dict)
 
-        self.body = {
+        body = {
             "id": self.netgroup_uuid,
             "name": self.network_group_object,
             "literals": (self.network_group_list)
         }
 
-        ret_val, _ = self._api_run("put", self.api_path, action_result)
+        ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
@@ -339,7 +370,7 @@ class FP_Connector(BaseConnector):
 
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully added {0}".format(self.destination_network))
 
-    def del_from_network_object(self, param):
+    def _handle_unblock_ip(self, param):
         """Unblocks an IP network"""
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
@@ -362,13 +393,13 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.remove(self.destination_dict)
 
-        self.body = {
+        body = {
             "id": self.netgroup_uuid,
             "name": self.network_group_object,
             "literals": (self.network_group_list)
         }
 
-        ret_val, _ = self._api_run("put", self.api_path, action_result)
+        ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
@@ -398,10 +429,10 @@ class FP_Connector(BaseConnector):
         self.debug_print("action_id: {}".format(action_id))
 
         supported_actions = {
-            "test connectivity": self.test_connectivity,
-            "list_networks": self.list_networks_in_object,
-            "block_ip": self.add_to_network_object,
-            "unblock_ip": self.del_from_network_object
+            "test connectivity": self._handle_test_connectivity,
+            "list_networks": self._handle_list_networks,
+            "block_ip": self._handle_block_ip,
+            "unblock_ip": self._handle_unblock_ip
         }
 
         run_action = supported_actions[action_id]
@@ -417,8 +448,7 @@ if __name__ == "__main__":
         print("No test json specified as input")
         sys.exit(0)
 
-    # input a json file that contains data like the configuration and action
-    # parameters
+    # input a json file that contains data like the configuration and action parameters
     with open(sys.argv[1]) as f:
         in_json = f.read()
         in_json = json.loads(in_json)

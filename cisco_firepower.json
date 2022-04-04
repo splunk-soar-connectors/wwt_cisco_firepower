@@ -5,7 +5,7 @@
     "publisher": "Splunk",
     "package_name": "phantom_cisco_firepower",
     "type": "firewall",
-    "license": "Copyright (c) 2022 Splunk Inc.",
+    "copyright": "Copyright (c) 2016-2022 Splunk Inc.",
     "main_module": "cisco_firepower_connector.py",
     "app_version": "2.0.0",
     "utctime_updated": "2022-01-07T21:29:07.000000Z",
@@ -16,6 +16,7 @@
     "python_version": "3",
     "logo": "logo_cisco.svg",
     "logo_dark": "logo_cisco_dark.svg",
+    "fips_compliant": true,
     "configuration": {
         "firepower_host": {
             "description": "Device IP/Hostname",
@@ -56,7 +57,6 @@
         {
             "action": "test connectivity",
             "description": "Validate the asset configuration for connectivity",
-            "verbose": "This action logs into the Cisco Firepower device using a REST call",
             "type": "test",
             "identifier": "test connectivity",
             "read_only": true,
@@ -74,10 +74,18 @@
             "render": {
                 "width": 12,
                 "title": "Static Routes",
-                "type": "json",
+                "type": "table",
                 "height": 20
             },
             "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
                 {
                     "data_path": "action_result.data.*.network",
                     "data_type": "string",
@@ -85,12 +93,32 @@
                     "column_order": 0
                 },
                 {
-                    "data_path": "action_result.status",
-                    "data_type": "string"
+                    "data_path": "action_result.summary.total_routes",
+                    "data_type": "string",
+                    "example_values": [
+                        2
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Total routes: 2"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 }
             ],
             "versions": "EQ(*)"
@@ -110,7 +138,8 @@
                     "description": "IP/network to block (X.X.X.X/NM)",
                     "data_type": "string",
                     "primary": true,
-                    "required": true
+                    "required": true,
+                    "order": 0
                 }
             },
             "render": {
@@ -122,6 +151,26 @@
             "output": [
                 {
                     "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.ip",
+                    "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ip network"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
                     "data_type": "string"
                 },
                 {
@@ -129,16 +178,18 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.ip",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "summary.total_objects",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 }
             ],
             "versions": "EQ(*)"
@@ -158,7 +209,8 @@
                     "description": "IP/network to unBlock (X.X.X.X/NM)",
                     "data_type": "string",
                     "primary": true,
-                    "required": true
+                    "required": true,
+                    "order": 0
                 }
             },
             "render": {
@@ -170,6 +222,26 @@
             "output": [
                 {
                     "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.ip",
+                    "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ip network"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
                     "data_type": "string"
                 },
                 {
@@ -177,16 +249,18 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.ip",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "summary.total_objects",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 }
             ],
             "versions": "EQ(*)"
