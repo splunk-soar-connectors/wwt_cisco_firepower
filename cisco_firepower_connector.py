@@ -351,6 +351,9 @@ class FP_Connector(BaseConnector):
         else:
             return action_result.set_status(phantom.APP_ERROR, "Invalid IP: {0}".format(self.destination_network))
 
+        if self.destination_dict in self.network_group_list:
+            return action_result.set_status(phantom.APP_SUCCESS, "{0} is already present in the blocklist".format(self.destination_network))
+
         self.network_group_list.append(self.destination_dict)
 
         body = {
