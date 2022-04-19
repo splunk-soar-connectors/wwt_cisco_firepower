@@ -164,6 +164,7 @@ class FP_Connector(BaseConnector):
         return phantom.APP_SUCCESS
 
     def _get_headers(self, headers):
+        """ Extracts values to be added to the global header """
         self.token = headers.get("X-auth-access-token")
         self.domain_uuid = headers.get("DOMAIN_UUID")
         self.headers.update({"X-auth-access-token": self.token})
@@ -223,10 +224,14 @@ class FP_Connector(BaseConnector):
         if headers_only:
             return phantom.APP_SUCCESS, result.headers
 
+        resp_json = None
         try:
             resp_json = result.json()
         except Exception as e:
             return action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. {0}".format(str(e))), None
+
+        if not resp_json:
+            return action_result.set_status(phantom.APP_ERROR, "Received empty response from the server"), None
 
         return phantom.APP_SUCCESS, resp_json
 
@@ -373,7 +378,7 @@ class FP_Connector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully added {0}".format(self.destination_network))
 
     def _handle_unblock_ip(self, param):
-        """Unblocks an IP network"""
+        """ Unblocks an IP network """
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
