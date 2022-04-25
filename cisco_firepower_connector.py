@@ -13,6 +13,7 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
+import encryption_helper
 import phantom.app as phantom
 import requests
 import simplejson as json
@@ -69,6 +70,15 @@ class FP_Connector(BaseConnector):
             self._state = {"app_version": self.get_app_json().get("app_version")}
             return self.set_status(phantom.APP_ERROR, STATE_FILE_CORRUPT_ERR)
 
+        self.asset_id = self.get_asset_id()
+        try:
+            if TOKEN_KEY in self._state:
+                self.debug_print("Decrypting the token")
+                self._state[TOKEN_KEY] = encryption_helper.decrypt(self._state[TOKEN_KEY], self.asset_id)
+        except Exception as e:
+            self.debug_print("Error occurred while decrypting the token: {}".format(str(e)))
+            return self.set_status(phantom.APP_ERROR, ASSET_CORRUPTED_ERR)
+
         self.firepower_host = config["firepower_host"]
         self.username = config["username"]
         self.password = config["password"]
@@ -96,6 +106,13 @@ class FP_Connector(BaseConnector):
         required. Another usage is cleanup, disconnect from remote
         devices etc.
         """
+        try:
+            if TOKEN_KEY in self._state:
+                self.debug_print("Encrypting the token")
+                self._state[TOKEN_KEY] = encryption_helper.encrypt(self._state[TOKEN_KEY], self.asset_id)
+        except Exception as e:
+            self.debug_print("{}: {}".format(ENCRYPTION_ERR, str(e)))
+            self.set_status(phantom.APP_ERROR, ENCRYPTION_ERR)
         self.save_state(self._state)
         return phantom.APP_SUCCESS
 
@@ -209,6 +226,7 @@ class FP_Connector(BaseConnector):
 
         if not (200 <= result.status_code < 399):
             if result.status_code == 401 and first_try:
+                self.debug_print("Fetching a new token")
                 ret_val = self._get_token(action_result, True)
                 if phantom.is_fail(ret_val):
                     return action_result.get_status(), None
