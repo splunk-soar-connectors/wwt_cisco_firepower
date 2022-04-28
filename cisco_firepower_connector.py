@@ -17,7 +17,7 @@ import encryption_helper
 import phantom.app as phantom
 import requests
 import simplejson as json
-from netaddr import IPNetwork
+from netaddr import ZEROFILL, IPAddress, IPNetwork
 from phantom.action_result import ActionResult
 from phantom.base_connector import BaseConnector
 
@@ -50,6 +50,7 @@ class FP_Connector(BaseConnector):
         self.headers = HEADERS
         self.verify = False
         self.nothing_to_deploy = False
+        self.ip_version = None
 
     def initialize(self):
         """
@@ -212,12 +213,12 @@ class FP_Connector(BaseConnector):
         url = "https://{0}{1}".format(self.firepower_host, resource)
         if json_body:
             self.headers.update({"Content-type": "application/json"})
-
+        auth = None
+        if self.get_action_identifier() == "test_connectivity":
+            auth = requests.auth.HTTPBasicAuth(self.username, self.password)
         result = request_method(
             url,
-            auth=requests.auth.HTTPBasicAuth(
-                self.username,
-                self.password),
+            auth=auth,
             headers=self.headers,
             json=json_body,
             verify=self.verify,
@@ -257,8 +258,15 @@ class FP_Connector(BaseConnector):
         """ Validates the IP """
         ip_net = ""
         try:
+            # Shorten the IP address
+            network_parts = self.destination_network.lower().split("/")
+            ip = IPAddress(network_parts[0], flags=ZEROFILL)
+            self.ip_version = ip.version
+            network_parts[0] = str(ip)
+            self.destination_network = "/".join(network_parts)
+
             ip_net = IPNetwork(self.destination_network)
-        except:
+        except Exception:
             return False
         if ip_net.prefixlen in range(32) and (ip_net.network != ip_net.ip):
             self.destination_network = "{0}/{1}".format(ip_net.network, ip_net.prefixlen)
@@ -267,19 +275,16 @@ class FP_Connector(BaseConnector):
     def _gen_network_dict(self):
         """ Generates network dictionary """
         ip_and_mask = self.destination_network.split("/")
-        if len(ip_and_mask) == 1 or int(ip_and_mask[1]) == 32:
+        if len(ip_and_mask) == 1 or (self.ip_version == 4 and int(ip_and_mask[1]) == 32) or \
+                (self.ip_version == 6 and int(ip_and_mask[1]) == 128):
             self.debug_print("IP is type Host")
             self.destination_dict = {"type": "Host",
                                      "value": "{0}".format(self.destination_network)}
-        elif len(ip_and_mask) == 2 and int(ip_and_mask[1]) in range(32):
+        elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
             self.destination_dict = {"type": "Network",
                                      "value": "{0}".format(self.destination_network)}
-        self.debug_print("Network Dictionary: " "{0}".format(self.destination_dict))
-        if self.destination_network:
-            return True
-        else:
-            return False
+        self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
 
     def _deploy_config(self, action_result):
         """ Deploys configuration """
