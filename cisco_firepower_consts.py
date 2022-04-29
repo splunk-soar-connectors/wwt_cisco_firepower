@@ -23,6 +23,8 @@ STATE_FILE_CORRUPT_ERR = "Error occurred while loading the state file due to its
     "Resetting the state file with the default format. Please try again."
 DEFAULT_REQUEST_TIMEOUT = 30  # in seconds
 TOKEN_KEY = "X-auth-access-token"
+DOMAIN_UUID_KEY = "domain_uuid"
+DOMAIN_NAME_KEY = "domain_name"
 ASSET_CORRUPTED_ERR = "ERROR: The state file for this asset is corrupted. " \
     "Please delete the state file corresponding to the current asset and test the connectivity"
 ENCRYPTION_ERR = "Error occurred while encrypting the state file"

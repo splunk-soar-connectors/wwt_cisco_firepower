@@ -51,6 +51,7 @@ class FP_Connector(BaseConnector):
         self.verify = False
         self.nothing_to_deploy = False
         self.ip_version = None
+        self.generate_new_token = False
 
     def initialize(self):
         """
@@ -83,7 +84,7 @@ class FP_Connector(BaseConnector):
         self.firepower_host = config["firepower_host"]
         self.username = config["username"]
         self.password = config["password"]
-        self.domain_name = config["domain_name"]
+        self.domain_name = config["domain_name"].lower()
         self.network_group_object = config["network_group_object"]
 
         force = True if self.get_action_identifier() == "test_connectivity" else False
@@ -140,6 +141,9 @@ class FP_Connector(BaseConnector):
             self.debug_print("{}. {}".format(message, str(e)))
             return self.set_status(phantom.APP_ERROR, message)
 
+        if not self.netgroup_uuid:
+            return self.set_status(phantom.APP_ERROR, "Kindly provide a valid network group object")
+
         return phantom.APP_SUCCESS
 
     def _get_group_object_networks(self, action_result):
@@ -181,29 +185,52 @@ class FP_Connector(BaseConnector):
 
         return phantom.APP_SUCCESS
 
-    def _get_headers(self, headers):
-        """ Extracts values to be added to the global header """
-        self.token = headers.get("X-auth-access-token")
-        self.domain_uuid = headers.get("DOMAIN_UUID")
-        self.headers.update({"X-auth-access-token": self.token})
+    def _clear_state(self):
+        """ Clears the state """
+        self._state.pop(TOKEN_KEY, None)
+        self._state.pop(DOMAIN_UUID_KEY, None)
+        self._state.pop(DOMAIN_NAME_KEY, None)
+
+    def _update_state(self):
+        """ Updates the state with the new values """
+        self._state[TOKEN_KEY] = self.token
+        self._state[DOMAIN_UUID_KEY] = self.domain_uuid
+        self._state[DOMAIN_NAME_KEY] = self.domain_name
 
     def _get_token(self, action_result, force=False):
-        """ Gets token """
-        token = self._state.get("X-auth-access-token")
-        domain_id = self._state.get("DOMAIN_UUID")
+        """ Gets a token """
+        self.token = self._state.get(TOKEN_KEY)
+        self.domain_uuid = self._state.get(DOMAIN_UUID_KEY)
+        self.domain = self._state.get(DOMAIN_NAME_KEY)
 
-        if not force and token and domain_id:
-            self._get_headers(self._state)
-        else:
-            ret_val, headers = self._api_run("post", TOKEN_ENDPOINT, action_result, headers_only=True, first_try=False)
-            if phantom.is_fail(ret_val):
-                self._state.pop("X-auth-access-token", None)
-                self._state.pop("DOMAIN_UUID", None)
-                return action_result.get_status()
+        if not force and self.token and self.domain_uuid and self.domain_name == self.domain.lower():
+           self.headers.update({"X-auth-access-token": self.token})
+           return phantom.APP_SUCCESS
 
-            self._get_headers(headers)
-            self._state["X-auth-access-token"] = self.token
-            self._state["DOMAIN_UUID"] = self.domain_uuid
+        # Generate a new token
+        self.generate_new_token = True
+        ret_val, headers = self._api_run("post", TOKEN_ENDPOINT, action_result, headers_only=True, first_try=False)
+        if phantom.is_fail(ret_val):
+            self._clear_state()
+            return action_result.get_status()
+
+        self.token = headers.get("X-auth-access-token")
+        self.domain_uuid = None
+        try:
+            domains = json.loads(headers.get("DOMAINS"))
+        except Exception:
+            return action_result.set_status(phantom.APP_ERROR, "Received unexpected response from the server")
+
+        for domain in domains:
+            if self.domain_name in domain["name"].lower():
+                self.domain_uuid = domain["uuid"]
+                break
+
+        if not self.domain_uuid:
+            return action_result.set_status(phantom.APP_ERROR, "Kindly provide a valid domain")
+
+        self.headers.update({"X-auth-access-token": self.token})
+        self._update_state()
 
         return phantom.APP_SUCCESS
 
@@ -213,17 +240,23 @@ class FP_Connector(BaseConnector):
         url = "https://{0}{1}".format(self.firepower_host, resource)
         if json_body:
             self.headers.update({"Content-type": "application/json"})
+
         auth = None
-        if self.get_action_identifier() == "test_connectivity":
+        if self.generate_new_token:
             auth = requests.auth.HTTPBasicAuth(self.username, self.password)
-        result = request_method(
-            url,
-            auth=auth,
-            headers=self.headers,
-            json=json_body,
-            verify=self.verify,
-            timeout=DEFAULT_REQUEST_TIMEOUT
-        )
+            self.generate_new_token = False
+
+        try:
+            result = request_method(
+                url,
+                auth=auth,
+                headers=self.headers,
+                json=json_body,
+                verify=self.verify,
+                timeout=DEFAULT_REQUEST_TIMEOUT
+            )
+        except Exception as e:
+            return action_result.set_status(phantom.APP_ERROR, "Error connecting to server. {}".format(str(e))), None
 
         if not (200 <= result.status_code < 399):
             if result.status_code == 401 and first_try:
