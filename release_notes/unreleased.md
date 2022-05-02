@@ -1,4 +1,8 @@
 **Unreleased**
-* Compatibility changes for Python 3 support [PAPP-24192]
 * Certified the app
+* Compatibility changes for Python 3 support [PAPP-24356]
 * Added a table output view for 'block ip' and 'unblock ip' actions
+* Added token caching functionality
+* Fixed the IPv6 address processing issue
+* Fixed the 'Firepower Domain' parameter not being taken into consideration issue
+* Updated the app documentation

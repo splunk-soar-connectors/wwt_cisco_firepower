@@ -53,8 +53,17 @@ class FP_Connector(BaseConnector):
         self.ip_version = None
         self.generate_new_token = False
 
+    def _reset_state_file(self):
+        """
+        This method resets the state file.
+        """
+        self.debug_print("Resetting the state file with the default format")
+        self._state = {"app_version": self.get_app_json().get("app_version")}
+
     def initialize(self):
         """
+        Initializes the global variables and validates them.
+
         This is an optional function that can be implemented by the
         AppConnector derived class. Since the configuration dictionary
         is already validated by the time this function is called,
@@ -68,8 +77,7 @@ class FP_Connector(BaseConnector):
         self._state = self.load_state()
 
         if not isinstance(self._state, dict):
-            self.debug_print("Resetting the state file with the default format")
-            self._state = {"app_version": self.get_app_json().get("app_version")}
+            self._reset_state_file()
             return self.set_status(phantom.APP_ERROR, STATE_FILE_CORRUPT_ERR)
 
         self.asset_id = self.get_asset_id()
@@ -79,7 +87,7 @@ class FP_Connector(BaseConnector):
                 self._state[TOKEN_KEY] = encryption_helper.decrypt(self._state[TOKEN_KEY], self.asset_id)
         except Exception as e:
             self.debug_print("Error occurred while decrypting the token: {}".format(str(e)))
-            return self.set_status(phantom.APP_ERROR, ASSET_CORRUPTED_ERR)
+            self._reset_state_file()
 
         self.firepower_host = config["firepower_host"]
         self.username = config["username"]
@@ -100,6 +108,8 @@ class FP_Connector(BaseConnector):
 
     def finalize(self):
         """
+        Performs some final operations or clean up operations.
+
         This function gets called once all the param dictionary
         elements are looped over and no more handle_action calls are
         left to be made. It gives the AppConnector a chance to loop
@@ -114,7 +124,8 @@ class FP_Connector(BaseConnector):
                 self._state[TOKEN_KEY] = encryption_helper.encrypt(self._state[TOKEN_KEY], self.asset_id)
         except Exception as e:
             self.debug_print("{}: {}".format(ENCRYPTION_ERR, str(e)))
-            self.set_status(phantom.APP_ERROR, ENCRYPTION_ERR)
+            self._reset_state_file()
+
         self.save_state(self._state)
         return phantom.APP_SUCCESS
 
@@ -142,12 +153,16 @@ class FP_Connector(BaseConnector):
             return self.set_status(phantom.APP_ERROR, message)
 
         if not self.netgroup_uuid:
-            return self.set_status(phantom.APP_ERROR, "Kindly provide a valid network group object")
+            return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
         return phantom.APP_SUCCESS
 
     def _get_group_object_networks(self, action_result):
-        """ Gets network groups """
+        """
+        This method fetches the network groups for the
+        network group object specified in the app config and
+        sets the network_group_list variable.
+        """
         # Get the current list of static routes from the Target Host
         self.api_path = HOST_NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid, self.netgroup_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
@@ -160,7 +175,10 @@ class FP_Connector(BaseConnector):
         return phantom.APP_SUCCESS
 
     def _get_firepower_deployable_devices(self, action_result):
-        """ Gets deployable devices """
+        """
+        This method is fetches the deployable devices and
+        adds them to the firepower_deployable_devices variable.
+        """
         # Get the current list of devices in the domain
         self.api_path = DEPLOYABLE_DEVICES_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
@@ -185,20 +203,19 @@ class FP_Connector(BaseConnector):
 
         return phantom.APP_SUCCESS
 
-    def _clear_state(self):
-        """ Clears the state """
-        self._state.pop(TOKEN_KEY, None)
-        self._state.pop(DOMAIN_UUID_KEY, None)
-        self._state.pop(DOMAIN_NAME_KEY, None)
-
     def _update_state(self):
-        """ Updates the state with the new values """
+        """
+        This method updates the state with the new values.
+        """
         self._state[TOKEN_KEY] = self.token
         self._state[DOMAIN_UUID_KEY] = self.domain_uuid
         self._state[DOMAIN_NAME_KEY] = self.domain_name
 
     def _get_token(self, action_result, force=False):
-        """ Gets a token """
+        """
+        This method returns the cached or a new token based
+        on the values present in the state file.
+        """
         self.token = self._state.get(TOKEN_KEY)
         self.domain_uuid = self._state.get(DOMAIN_UUID_KEY)
         self.domain = self._state.get(DOMAIN_NAME_KEY)
@@ -209,9 +226,10 @@ class FP_Connector(BaseConnector):
 
         # Generate a new token
         self.generate_new_token = True
+        self.debug_print("Fetching a new token")
         ret_val, headers = self._api_run("post", TOKEN_ENDPOINT, action_result, headers_only=True, first_try=False)
         if phantom.is_fail(ret_val):
-            self._clear_state()
+            self._reset_state_file()
             return action_result.get_status()
 
         self.token = headers.get("X-auth-access-token")
@@ -227,7 +245,7 @@ class FP_Connector(BaseConnector):
                 break
 
         if not self.domain_uuid:
-            return action_result.set_status(phantom.APP_ERROR, "Kindly provide a valid domain")
+            return action_result.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Firepower Domain' parameter")
 
         self.headers.update({"X-auth-access-token": self.token})
         self._update_state()
@@ -235,7 +253,9 @@ class FP_Connector(BaseConnector):
         return phantom.APP_SUCCESS
 
     def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True):
-        """ Makes a REST call to the API """
+        """
+        This method makes a REST call to the API
+        """
         request_method = getattr(requests, method)
         url = "https://{0}{1}".format(self.firepower_host, resource)
         if json_body:
@@ -260,7 +280,6 @@ class FP_Connector(BaseConnector):
 
         if not (200 <= result.status_code < 399):
             if result.status_code == 401 and first_try:
-                self.debug_print("Fetching a new token")
                 ret_val = self._get_token(action_result, True)
                 if phantom.is_fail(ret_val):
                     return action_result.get_status(), None
@@ -288,7 +307,9 @@ class FP_Connector(BaseConnector):
         return phantom.APP_SUCCESS, resp_json
 
     def _validate_ip(self):
-        """ Validates the IP """
+        """
+        This method validates the IP
+        """
         ip_net = ""
         try:
             # Shorten the IP address
@@ -306,7 +327,10 @@ class FP_Connector(BaseConnector):
         return True
 
     def _gen_network_dict(self):
-        """ Generates network dictionary """
+        """
+        This method generates a network dictionary
+        from the ip parameter value.
+        """
         ip_and_mask = self.destination_network.split("/")
         if len(ip_and_mask) == 1 or (self.ip_version == 4 and int(ip_and_mask[1]) == 32) or \
                 (self.ip_version == 6 and int(ip_and_mask[1]) == 128):
@@ -320,7 +344,9 @@ class FP_Connector(BaseConnector):
         self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
 
     def _deploy_config(self, action_result):
-        """ Deploys configuration """
+        """
+        This method creates a deploy request for the deployable devices present in the firepower_deployable_devices list.
+        """
         ret_val = self._get_firepower_deployable_devices(action_result)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
@@ -369,7 +395,10 @@ class FP_Connector(BaseConnector):
         return action_result.set_status(phantom.APP_ERROR)
 
     def _handle_list_networks(self, param):
-        """ Lists currently blocked networks """
+        """
+        This method lists currently blocked networks
+        of a network group.
+        """
         self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
 
         # Add an action result to the App Run
@@ -393,7 +422,9 @@ class FP_Connector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS)
 
     def _handle_block_ip(self, param):
-        """ Blocks an IP network """
+        """
+        This method blocks an IP/network.
+        """
         self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
 
         # Add an action result to the App Run
@@ -434,7 +465,9 @@ class FP_Connector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully added {0}".format(self.destination_network))
 
     def _handle_unblock_ip(self, param):
-        """ Unblocks an IP network """
+        """
+        This method unblocks an IP/network.
+        """
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
