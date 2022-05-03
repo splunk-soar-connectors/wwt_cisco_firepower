@@ -77,8 +77,8 @@ class FP_Connector(BaseConnector):
         self._state = self.load_state()
 
         if not isinstance(self._state, dict):
+            self.debug_print(STATE_FILE_CORRUPT_ERR)
             self._reset_state_file()
-            return self.set_status(phantom.APP_ERROR, STATE_FILE_CORRUPT_ERR)
 
         self.asset_id = self.get_asset_id()
         try:

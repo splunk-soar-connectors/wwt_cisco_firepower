@@ -19,8 +19,7 @@ DEPLOYABLE_DEVICES_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deployab
 NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups"
 TOKEN_ENDPOINT = "/api/fmc_platform/v1/auth/generatetoken"
 HEADERS = {"Accept": "application/json"}
-STATE_FILE_CORRUPT_ERR = "Error occurred while loading the state file due to its unexpected format. " \
-    "Resetting the state file with the default format. Please try again"
+STATE_FILE_CORRUPT_ERR = "Error occurred while loading the state file due to its unexpected format"
 DEFAULT_REQUEST_TIMEOUT = 30  # in seconds
 TOKEN_KEY = "X-auth-access-token"
 DOMAIN_UUID_KEY = "domain_uuid"
