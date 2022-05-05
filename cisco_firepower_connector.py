@@ -1,6 +1,6 @@
 # File: cisco_firepower_connector.py
 #
-# Copyright (c) 2021-2022 Splunk Inc.
+# Copyright (c) 2016-2022 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ class FP_Connector(BaseConnector):
         self.password = config["password"]
         self.domain_name = config["domain_name"].lower()
         self.network_group_object = config["network_group_object"]
+        self.verify = config.get("verify_server_cert", False)
 
         force = True if self.get_action_identifier() == "test_connectivity" else False
         ret_val = self._get_token(self, force=force)
@@ -171,7 +172,7 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        self.network_group_list = response.get("literals")
+        self.network_group_list = response.get("literals", [])
         return phantom.APP_SUCCESS
 
     def _get_firepower_deployable_devices(self, action_result):
@@ -302,7 +303,8 @@ class FP_Connector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. {0}".format(str(e))), None
 
         if not resp_json:
-            return action_result.set_status(phantom.APP_ERROR, "Received empty response from the server"), None
+            return action_result.set_status(phantom.APP_ERROR,
+                "Status code: {}. Received empty response from the server".format(result.status_code)), None
 
         return phantom.APP_SUCCESS, resp_json
 
@@ -322,7 +324,7 @@ class FP_Connector(BaseConnector):
             ip_net = IPNetwork(self.destination_network)
         except Exception:
             return False
-        if ip_net.prefixlen in range(32) and (ip_net.network != ip_net.ip):
+        if ip_net.network != ip_net.ip:
             self.destination_network = "{0}/{1}".format(ip_net.network, ip_net.prefixlen)
         return True
 
@@ -373,7 +375,7 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        self.network_group_list = response.get("literals")
+        self.network_group_list = response.get("literals", [])
         return phantom.APP_SUCCESS
 
     def _handle_test_connectivity(self, param):
@@ -410,12 +412,15 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        # Even if the query was successfull data might not be available
-        if not self.network_group_list:
-            return action_result.set_status(phantom.APP_ERROR, "API Request returned no data")
+        try:
+            if self.network_group_list:
+                for net in self.network_group_list:
+                    action_result.add_data({"network": net["value"]})
+        except Exception as e:
+            message = "An error occurred while processing the networks"
+            self.debug_print("{}. {}".format(message, str(e)))
+            return action_result.set_status(phantom.APP_ERROR, message)
 
-        for net in self.network_group_list:
-            action_result.add_data({"network": net["value"]})
         summary = {"total_routes": len(self.network_group_list)}
         action_result.update_summary(summary)
 

@@ -5,7 +5,7 @@
     "publisher": "Splunk",
     "package_name": "phantom_cisco_firepower",
     "type": "firewall",
-    "license": "Copyright (c) 2021-2022 Splunk Inc.",
+    "license": "Copyright (c) 2016-2022 Splunk Inc.",
     "main_module": "cisco_firepower_connector.py",
     "app_version": "2.0.0",
     "utctime_updated": "2022-01-07T21:29:07.000000Z",
@@ -17,6 +17,9 @@
     "logo": "logo_cisco.svg",
     "logo_dark": "logo_cisco_dark.svg",
     "fips_compliant": true,
+    "latest_tested_versions": [
+        "Firepower Management Center 7.1.0"
+    ],
     "configuration": {
         "firepower_host": {
             "description": "Device IP/Hostname",
@@ -24,9 +27,11 @@
             "data_type": "string",
             "required": true
         },
-        "ph": {
-            "data_type": "ph",
-            "order": 1
+        "verify_server_cert": {
+            "description": "Verify server certificate",
+            "data_type": "boolean",
+            "order": 1,
+            "default": false
         },
         "username": {
             "description": "User with access to the Firepower node",
@@ -137,6 +142,7 @@
             "type": "contain",
             "identifier": "block_ip",
             "read_only": false,
+            "undo": "unblock ip",
             "parameters": {
                 "ip": {
                     "contains": [
@@ -219,6 +225,7 @@
             "type": "correct",
             "identifier": "unblock_ip",
             "read_only": false,
+            "undo": "block ip",
             "parameters": {
                 "ip": {
                     "contains": [
