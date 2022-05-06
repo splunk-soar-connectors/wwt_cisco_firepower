@@ -5,4 +5,5 @@
 * Added token caching functionality
 * Fixed the IPv6 address processing issue
 * Fixed the 'Firepower Domain' parameter not being taken into consideration issue
+* Added a new 'Verify server certificate' configuration parameter
 * Updated the app documentation
