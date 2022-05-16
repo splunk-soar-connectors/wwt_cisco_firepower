@@ -181,7 +181,7 @@ class FP_Connector(BaseConnector):
         adds them to the firepower_deployable_devices variable.
         """
         # Get the current list of devices in the domain
-        self.api_path = DEPLOYABLE_DEVICES_ENDPOINT.format(self.domain_uuid)
+        self.api_path = DEPLOYABLE_DEVICES_ENDPOINT.format(self.domain_uuid, LIMIT, EXPANDED)
         self.debug_print("api_path: {0}".format(self.api_path))
 
         ret_val, response = self._api_run("get", self.api_path, action_result)
@@ -312,7 +312,6 @@ class FP_Connector(BaseConnector):
         """
         This method validates the IP
         """
-        ip_net = ""
         try:
             # Shorten the IP address
             network_parts = self.destination_network.lower().split("/")
