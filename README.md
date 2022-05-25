@@ -1,94 +1,148 @@
-Cisco Firepower
+[comment]: # "Auto-generated SOAR connector documentation"
+# Cisco Firepower
 
-Publisher: World Wide Technology
-App Version: 1.1.8
-Product Vendor: Cisco Systems
-Product Name: Cisco Firepower
-Product Version Supported (regex): ".*"
-This app interfaces with Cisco Firepower devices to add or remove IP's or
-networks to a Firepower Network Group Object, which is configured with an ACL
+Publisher: Splunk  
+Connector Version: 2\.0\.0  
+Product Vendor: Cisco Systems  
+Product Name: Cisco Firepower  
+Product Version Supported (regex): "\.\*"  
+Minimum Product Version: 5\.2\.0  
 
-Configuration Variables
+This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL
 
-The below configuration variables are required for this App to operate on Cisco
-Firepower. These are specified when configuring an asset in Phantom.
+[comment]: # " File: README.md"
+[comment]: # "  Copyright (c) 2016-2022 Splunk Inc."
+[comment]: # ""
+[comment]: # "Licensed under the Apache License, Version 2.0 (the 'License');"
+[comment]: # "you may not use this file except in compliance with the License."
+[comment]: # "You may obtain a copy of the License at"
+[comment]: # ""
+[comment]: # "    http://www.apache.org/licenses/LICENSE-2.0"
+[comment]: # ""
+[comment]: # "Unless required by applicable law or agreed to in writing, software distributed under"
+[comment]: # "the License is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,"
+[comment]: # "either express or implied. See the License for the specific language governing permissions"
+[comment]: # "and limitations under the License."
+[comment]: # ""
+## Explanation of the Asset Configuration Parameters
 
-VARIABLE    REQUIRED    TYPE    DESCRIPTION
-username    required    string    User with access to the Firepower node
-network_group_object    required    string    Network Group Object
-domain_name    required    string    Firepower Domain
-firepower_host    required    string    Device IP/Hostname
-password    required    password    Password
-Supported Actions
+Following is the explanation of asset configuration parameters.
 
-test connectivity - Validate the asset configuration for connectivity
-list networks in object - Lists currently blocked networks
-block ip - Blocks an IP network
-unblock ip - Unblocks an IP network
-action: 'test connectivity'
+-   **Device IP/Hostname:** The IP/Hostname of the Firepower Management Center instance.
+-   **Verify server certificate:** Validate server certificate.
+-   **User with access to the Firepower node:** Username of the user with access to the Firepower
+    node.
+-   **Password:** Password for the above mentioned username.
+-   **Firepower Domain:** The Firepower domain you want to run the actions on.
+-   **Network Group Object:** The network group object you want to run the actions on.
 
+## Authentication
+
+The app uses token-based authentication. The 'test connectivity' action fetches a new token in
+exchange for the provided username and password. The app uses this token for authentication. The
+newly fetched token is encrypted and stored in the state file for future use. If the stored token
+expires or gets corrupted, the app automatically generates a new one.
+
+## Port Information
+
+The app uses HTTP/HTTPS protocol for communicating with the Cisco Firepower Server. Below are the
+default ports used by Splunk SOAR.
+
+| Service Name | Transport Protocol | Port |
+|--------------|--------------------|------|
+| http         | tcp                | 80   |
+| https        | tcp                | 443  |
+
+
+### Configuration Variables
+The below configuration variables are required for this Connector to operate.  These variables are specified when configuring a Cisco Firepower asset in SOAR.
+
+VARIABLE | REQUIRED | TYPE | DESCRIPTION
+-------- | -------- | ---- | -----------
+**firepower\_host** |  required  | string | Device IP/Hostname
+**verify\_server\_cert** |  optional  | boolean | Verify server certificate
+**username** |  required  | string | User with access to the Firepower node
+**password** |  required  | password | Password
+**domain\_name** |  required  | string | Firepower Domain
+**network\_group\_object** |  required  | string | Network Group Object
+
+### Supported Actions  
+[test connectivity](#action-test-connectivity) - Validate the asset configuration for connectivity  
+[list networks](#action-list-networks) - Lists currently blocked networks  
+[block ip](#action-block-ip) - Blocks an IP network  
+[unblock ip](#action-unblock-ip) - Unblocks an IP network  
+
+## action: 'test connectivity'
 Validate the asset configuration for connectivity
 
-Type: test
+Type: **test**  
+Read only: **True**
 
-Read only: True
-
-This action logs into the Cisco Firepower device using a REST call
-
-Action Parameters
-
+#### Action Parameters
 No parameters are required for this action
 
-Action Output
+#### Action Output
+No Output  
 
-No Output
-
-action: 'list networks in object'
-
+## action: 'list networks'
 Lists currently blocked networks
 
-Type: investigate
+Type: **investigate**  
+Read only: **True**
 
-Read only: True
-
-Action Parameters
-
+#### Action Parameters
 No parameters are required for this action
 
-Action Output
+#### Action Output
+DATA PATH | TYPE | CONTAINS
+--------- | ---- | --------
+action\_result\.status | string | 
+action\_result\.data\.\*\.network | string |  `ip`  `ip network` 
+action\_result\.summary\.total\_routes | numeric | 
+action\_result\.message | string | 
+summary\.total\_objects | numeric | 
+summary\.total\_objects\_successful | numeric |   
 
-DATA PATH    TYPE    CONTAINS
-action_result.data.*.network    string    
-action_result.status    string    
-action_result.message    string    
-action: 'block ip'
-
+## action: 'block ip'
 Blocks an IP network
 
-Type: contain
+Type: **contain**  
+Read only: **False**
 
-Read only: True
+#### Action Parameters
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**ip** |  required  | IP/network to block \(X\.X\.X\.X/NM\) | string |  `ip`  `ip network` 
 
-Action Parameters
+#### Action Output
+DATA PATH | TYPE | CONTAINS
+--------- | ---- | --------
+action\_result\.status | string | 
+action\_result\.parameter\.ip | string |  `ip`  `ip network` 
+action\_result\.data | string | 
+action\_result\.summary | string | 
+action\_result\.message | string | 
+summary\.total\_objects | numeric | 
+summary\.total\_objects\_successful | numeric |   
 
-PARAMETER    REQUIRED    DESCRIPTION    TYPE    CONTAINS
-destination_network    required    IP/network to block (X.X.X.X/NM)    string    
-Action Output
-
-No Output
-
-action: 'unblock ip'
-
+## action: 'unblock ip'
 Unblocks an IP network
 
-Type: correct
+Type: **correct**  
+Read only: **False**
 
-Read only: True
+#### Action Parameters
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**ip** |  required  | IP/network to unBlock \(X\.X\.X\.X/NM\) | string |  `ip`  `ip network` 
 
-Action Parameters
-
-PARAMETER    REQUIRED    DESCRIPTION    TYPE    CONTAINS
-destination_network    required    IP/network to unBlock (X.X.X.X/NM)    string    
-Action Output
-
-No Output
+#### Action Output
+DATA PATH | TYPE | CONTAINS
+--------- | ---- | --------
+action\_result\.status | string | 
+action\_result\.parameter\.ip | string |  `ip`  `ip network` 
+action\_result\.data | string | 
+action\_result\.summary | string | 
+action\_result\.message | string | 
+summary\.total\_objects | numeric | 
+summary\.total\_objects\_successful | numeric | 
