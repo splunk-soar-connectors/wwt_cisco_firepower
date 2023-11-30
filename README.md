@@ -2,11 +2,11 @@
 # Cisco Firepower
 
 Publisher: Splunk  
-Connector Version: 2\.0\.0  
+Connector Version: 2.0.1  
 Product Vendor: Cisco Systems  
 Product Name: Cisco Firepower  
-Product Version Supported (regex): "\.\*"  
-Minimum Product Version: 5\.2\.0  
+Product Version Supported (regex): ".\*"  
+Minimum Product Version: 5.2.0  
 
 This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL
 
@@ -59,12 +59,12 @@ The below configuration variables are required for this Connector to operate.  T
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
-**firepower\_host** |  required  | string | Device IP/Hostname
-**verify\_server\_cert** |  optional  | boolean | Verify server certificate
+**firepower_host** |  required  | string | Device IP/Hostname
+**verify_server_cert** |  optional  | boolean | Verify server certificate
 **username** |  required  | string | User with access to the Firepower node
 **password** |  required  | password | Password
-**domain\_name** |  required  | string | Firepower Domain
-**network\_group\_object** |  required  | string | Network Group Object
+**domain_name** |  required  | string | Firepower Domain
+**network_group_object** |  required  | string | Network Group Object
 
 ### Supported Actions  
 [test connectivity](#action-test-connectivity) - Validate the asset configuration for connectivity  
@@ -94,14 +94,14 @@ Read only: **True**
 No parameters are required for this action
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.data\.\*\.network | string |  `ip`  `ip network` 
-action\_result\.summary\.total\_routes | numeric | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.data.\*.network | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.summary.total_routes | numeric |  |   2 
+action_result.message | string |  |   Total routes: 2 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'block ip'
 Blocks an IP network
@@ -112,18 +112,18 @@ Read only: **False**
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**ip** |  required  | IP/network to block \(X\.X\.X\.X/NM\) | string |  `ip`  `ip network` 
+**ip** |  required  | IP/network to block (X.X.X.X/NM) | string |  `ip`  `ip network` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.ip | string |  `ip`  `ip network` 
-action\_result\.data | string | 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.data | string |  |  
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully added 10.10.10.10 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'unblock ip'
 Unblocks an IP network
@@ -134,15 +134,15 @@ Read only: **False**
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**ip** |  required  | IP/network to unBlock \(X\.X\.X\.X/NM\) | string |  `ip`  `ip network` 
+**ip** |  required  | IP/network to unBlock (X.X.X.X/NM) | string |  `ip`  `ip network` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.ip | string |  `ip`  `ip network` 
-action\_result\.data | string | 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric | 
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.data | string |  |  
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully deleted 10.10.10.10 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1 
