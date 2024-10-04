@@ -139,24 +139,29 @@ class FP_Connector(BaseConnector):
         self.api_path = NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
 
-        ret_val, response = self._api_run("get", self.api_path, self)
-        if phantom.is_fail(ret_val):
-            return self.get_status()
+        params = {"limit": 1}
+        while self.api_path:
+            ret_val, response = self._api_run("get", self.api_path, self, params=params)
+            if phantom.is_fail(ret_val):
+                return self.get_status()
+            self.debug_print(f"the response is {response}")
 
-        try:
-            network_group_list = response["items"]
-            for item in network_group_list:
-                if item["name"] == self.network_group_object:
-                    self.netgroup_uuid = item["id"]
-        except Exception as e:
-            message = "An error occurred while processing network groups"
-            self.debug_print("{}. {}".format(message, str(e)))
-            return self.set_status(phantom.APP_ERROR, message)
+            try:
+                network_group_list = response["items"]
+                for item in network_group_list:
+                    if item["name"] == self.network_group_object:
+                        self.netgroup_uuid = item["id"]
+            except Exception as e:
+                message = "An error occurred while processing network groups"
+                self.debug_print("{}. {}".format(message, str(e)))
+                return self.set_status(phantom.APP_ERROR, message)
 
-        if not self.netgroup_uuid:
-            return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
+            if self.netgroup_uuid:
+                return phantom.APP_SUCCESS
 
-        return phantom.APP_SUCCESS
+            self.api_path = response["paging"].get("next") if "paging" in response else None
+
+        return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
     def _get_group_object_networks(self, action_result):
         """
@@ -253,7 +258,7 @@ class FP_Connector(BaseConnector):
 
         return phantom.APP_SUCCESS
 
-    def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True):
+    def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True, params=None):
         """
         This method makes a REST call to the API
         """
@@ -274,6 +279,7 @@ class FP_Connector(BaseConnector):
                 headers=self.headers,
                 json=json_body,
                 verify=self.verify,
+                params=params,
                 timeout=DEFAULT_REQUEST_TIMEOUT
             )
         except Exception as e:
