@@ -341,8 +341,11 @@ class FP_Connector(BaseConnector):
         from the ip parameter value.
         """
         ip_and_mask = self.destination_network.split("/")
-        if len(ip_and_mask) == 1 or (self.ip_version == 4 and int(ip_and_mask[1]) == 32) or \
-                (self.ip_version == 6 and int(ip_and_mask[1]) == 128):  # noqa
+        if (
+            len(ip_and_mask) == 1  # noqa
+            or (self.ip_version == 4 and int(ip_and_mask[1]) == 32)  # noqa
+            or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)  # noqa
+        ):
             self.debug_print("IP is type Host")
             self.destination_dict = {"type": "Host", "value": "{0}".format(self.destination_network)}
         elif len(ip_and_mask) == 2:
