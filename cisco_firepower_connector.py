@@ -233,8 +233,8 @@ class FP_Connector(BaseConnector):
         self.domain = self._state.get(DOMAIN_NAME_KEY)
 
         if not force and self.token and self.domain_uuid and self.domain_name == self.domain.lower():
-           self.headers.update({"X-auth-access-token": self.token})
-           return phantom.APP_SUCCESS
+            self.headers.update({"X-auth-access-token": self.token})
+            return phantom.APP_SUCCESS
 
         # Generate a new token
         self.generate_new_token = True
