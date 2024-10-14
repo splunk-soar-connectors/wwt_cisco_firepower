@@ -139,8 +139,11 @@ class FP_Connector(BaseConnector):
         self.api_path = NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
 
-        params = {"limit": 1}
-        while self.api_path:
+        offset = 0
+        limit = 50
+        params = {"limit": limit}
+        while True:
+            params["offset"] = offset
             ret_val, response = self._api_run("get", self.api_path, self, params=params)
             if phantom.is_fail(ret_val):
                 return self.get_status()
@@ -159,7 +162,10 @@ class FP_Connector(BaseConnector):
             if self.netgroup_uuid:
                 return phantom.APP_SUCCESS
 
-            self.api_path = response["paging"].get("next") if "paging" in response else None
+            if 'paging' in response and 'next' in response['paging']:
+                offset += limit
+            else:
+                break
 
         return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
