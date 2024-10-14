@@ -162,7 +162,7 @@ class FP_Connector(BaseConnector):
             if self.netgroup_uuid:
                 return phantom.APP_SUCCESS
 
-            if 'paging' in response and 'next' in response['paging']:
+            if "paging" in response and "next" in response["paging"]:
                 offset += limit
             else:
                 break
@@ -205,9 +205,7 @@ class FP_Connector(BaseConnector):
                 self.nothing_to_deploy = True
                 return phantom.APP_SUCCESS
             for item in items:
-                self.firepower_deployable_devices.append(
-                    {"name": item["device"]["name"],
-                     "id": item["device"]["id"]})
+                self.firepower_deployable_devices.append({"name": item["device"]["name"], "id": item["device"]["id"]})
         except Exception as e:
             message = "An error occurred while processing deployable devices"
             self.debug_print("{}. {}".format(message, str(e)))
@@ -280,13 +278,7 @@ class FP_Connector(BaseConnector):
 
         try:
             result = request_method(
-                url,
-                auth=auth,
-                headers=self.headers,
-                json=json_body,
-                verify=self.verify,
-                params=params,
-                timeout=DEFAULT_REQUEST_TIMEOUT
+                url, auth=auth, headers=self.headers, json=json_body, verify=self.verify, params=params, timeout=DEFAULT_REQUEST_TIMEOUT
             )
         except Exception as e:
             return action_result.set_status(phantom.APP_ERROR, "Error connecting to server. {}".format(str(e))), None
@@ -315,8 +307,12 @@ class FP_Connector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. {0}".format(str(e))), None
 
         if not resp_json:
-            return action_result.set_status(phantom.APP_ERROR,
-                "Status code: {}. Received empty response from the server".format(result.status_code)), None
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR, "Status code: {}. Received empty response from the server".format(result.status_code)
+                ),
+                None,
+            )
 
         return phantom.APP_SUCCESS, resp_json
 
@@ -345,15 +341,16 @@ class FP_Connector(BaseConnector):
         from the ip parameter value.
         """
         ip_and_mask = self.destination_network.split("/")
-        if len(ip_and_mask) == 1 or (self.ip_version == 4 and int(ip_and_mask[1]) == 32) or \
-                (self.ip_version == 6 and int(ip_and_mask[1]) == 128):
+        if (
+            len(ip_and_mask) == 1
+            or (self.ip_version == 4 and int(ip_and_mask[1]) == 32)
+            or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)
+        ):
             self.debug_print("IP is type Host")
-            self.destination_dict = {"type": "Host",
-                                     "value": "{0}".format(self.destination_network)}
+            self.destination_dict = {"type": "Host", "value": "{0}".format(self.destination_network)}
         elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
-            self.destination_dict = {"type": "Network",
-                                     "value": "{0}".format(self.destination_network)}
+            self.destination_dict = {"type": "Network", "value": "{0}".format(self.destination_network)}
         self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
 
     def _deploy_config(self, action_result):
@@ -464,11 +461,7 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.append(self.destination_dict)
 
-        body = {
-            "id": self.netgroup_uuid,
-            "name": self.network_group_object,
-            "literals": (self.network_group_list)
-        }
+        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
@@ -505,11 +498,7 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.remove(self.destination_dict)
 
-        body = {
-            "id": self.netgroup_uuid,
-            "name": self.network_group_object,
-            "literals": (self.network_group_list)
-        }
+        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
@@ -544,7 +533,7 @@ class FP_Connector(BaseConnector):
             "test_connectivity": self._handle_test_connectivity,
             "list_networks": self._handle_list_networks,
             "block_ip": self._handle_block_ip,
-            "unblock_ip": self._handle_unblock_ip
+            "unblock_ip": self._handle_unblock_ip,
         }
 
         run_action = supported_actions[action_id]
