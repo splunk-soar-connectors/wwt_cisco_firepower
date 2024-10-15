@@ -309,7 +309,7 @@ class FP_Connector(BaseConnector):
         if not resp_json:
             return (
                 action_result.set_status(
-                    phantom.APP_ERROR, "Status code: {}. Received empty response from the server".format(result.status_code)
+                    phantom.APP_ERROR, f"Status code: {result.status_code}. Received empty response from the server"
                 ),
                 None,
             )
