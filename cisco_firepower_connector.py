@@ -156,7 +156,7 @@ class FP_Connector(BaseConnector):
                         self.netgroup_uuid = item["id"]
             except Exception as e:
                 message = "An error occurred while processing network groups"
-                self.debug_print("{}. {}".format(message, str(e)))
+                self.debug_print(f"{message}. {str(e)}")
                 return self.set_status(phantom.APP_ERROR, message)
 
             if self.netgroup_uuid:
