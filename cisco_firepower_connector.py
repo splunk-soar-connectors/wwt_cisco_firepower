@@ -347,7 +347,7 @@ class FP_Connector(BaseConnector):
             or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)  # noqa
         ):
             self.debug_print("IP is type Host")
-            self.destination_dict = {"type": "Host", "value": "{0}".format(self.destination_network)}
+            self.destination_dict = {"type": "Host", "value": str(self.destination_network)}
         elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
             self.destination_dict = {"type": "Network", "value": str(self.destination_network)}
