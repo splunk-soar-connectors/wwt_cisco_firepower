@@ -156,7 +156,7 @@ class FP_Connector(BaseConnector):
                         self.netgroup_uuid = item["id"]
             except Exception as e:
                 message = "An error occurred while processing network groups"
-                self.debug_print("{}. {}".format(message, str(e)))
+                self.debug_print(f"{message}. {str(e)}")
                 return self.set_status(phantom.APP_ERROR, message)
 
             if self.netgroup_uuid:
@@ -309,7 +309,7 @@ class FP_Connector(BaseConnector):
         if not resp_json:
             return (
                 action_result.set_status(
-                    phantom.APP_ERROR, "Status code: {}. Received empty response from the server".format(result.status_code)
+                    phantom.APP_ERROR, f"Status code: {result.status_code}. Received empty response from the server"
                 ),
                 None,
             )
@@ -347,11 +347,11 @@ class FP_Connector(BaseConnector):
             or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)  # noqa
         ):
             self.debug_print("IP is type Host")
-            self.destination_dict = {"type": "Host", "value": "{0}".format(self.destination_network)}
+            self.destination_dict = {"type": "Host", "value": str(self.destination_network)}
         elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
-            self.destination_dict = {"type": "Network", "value": "{0}".format(self.destination_network)}
-        self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
+            self.destination_dict = {"type": "Network", "value": str(self.destination_network)}
+        self.debug_print("Network Dictionary: {str(self.destination_dict)}")
 
     def _deploy_config(self, action_result):
         """
