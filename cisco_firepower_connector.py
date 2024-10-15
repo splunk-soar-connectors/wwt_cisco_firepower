@@ -351,7 +351,7 @@ class FP_Connector(BaseConnector):
         elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
             self.destination_dict = {"type": "Network", "value": "{0}".format(self.destination_network)}
-        self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
+        self.debug_print("Network Dictionary: {str(self.destination_dict)}")
 
     def _deploy_config(self, action_result):
         """
