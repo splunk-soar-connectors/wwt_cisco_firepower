@@ -139,24 +139,35 @@ class FP_Connector(BaseConnector):
         self.api_path = NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
 
-        ret_val, response = self._api_run("get", self.api_path, self)
-        if phantom.is_fail(ret_val):
-            return self.get_status()
+        offset = 0
+        limit = 50
+        params = {"limit": limit}
+        while True:
+            params["offset"] = offset
+            ret_val, response = self._api_run("get", self.api_path, self, params=params)
+            if phantom.is_fail(ret_val):
+                return self.get_status()
+            self.debug_print(f"the response is {response}")
 
-        try:
-            network_group_list = response["items"]
-            for item in network_group_list:
-                if item["name"] == self.network_group_object:
-                    self.netgroup_uuid = item["id"]
-        except Exception as e:
-            message = "An error occurred while processing network groups"
-            self.debug_print("{}. {}".format(message, str(e)))
-            return self.set_status(phantom.APP_ERROR, message)
+            try:
+                network_group_list = response["items"]
+                for item in network_group_list:
+                    if item["name"] == self.network_group_object:
+                        self.netgroup_uuid = item["id"]
+            except Exception as e:
+                message = "An error occurred while processing network groups"
+                self.debug_print(f"{message}. {str(e)}")
+                return self.set_status(phantom.APP_ERROR, message)
 
-        if not self.netgroup_uuid:
-            return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
+            if self.netgroup_uuid:
+                return phantom.APP_SUCCESS
 
-        return phantom.APP_SUCCESS
+            if "paging" in response and "next" in response["paging"]:
+                offset += limit
+            else:
+                break
+
+        return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
     def _get_group_object_networks(self, action_result):
         """
@@ -194,9 +205,7 @@ class FP_Connector(BaseConnector):
                 self.nothing_to_deploy = True
                 return phantom.APP_SUCCESS
             for item in items:
-                self.firepower_deployable_devices.append(
-                    {"name": item["device"]["name"],
-                     "id": item["device"]["id"]})
+                self.firepower_deployable_devices.append({"name": item["device"]["name"], "id": item["device"]["id"]})
         except Exception as e:
             message = "An error occurred while processing deployable devices"
             self.debug_print("{}. {}".format(message, str(e)))
@@ -222,8 +231,8 @@ class FP_Connector(BaseConnector):
         self.domain = self._state.get(DOMAIN_NAME_KEY)
 
         if not force and self.token and self.domain_uuid and self.domain_name == self.domain.lower():
-           self.headers.update({"X-auth-access-token": self.token})
-           return phantom.APP_SUCCESS
+            self.headers.update({"X-auth-access-token": self.token})
+            return phantom.APP_SUCCESS
 
         # Generate a new token
         self.generate_new_token = True
@@ -253,7 +262,7 @@ class FP_Connector(BaseConnector):
 
         return phantom.APP_SUCCESS
 
-    def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True):
+    def _api_run(self, method, resource, action_result, json_body=None, headers_only=False, first_try=True, params=None):
         """
         This method makes a REST call to the API
         """
@@ -269,12 +278,7 @@ class FP_Connector(BaseConnector):
 
         try:
             result = request_method(
-                url,
-                auth=auth,
-                headers=self.headers,
-                json=json_body,
-                verify=self.verify,
-                timeout=DEFAULT_REQUEST_TIMEOUT
+                url, auth=auth, headers=self.headers, json=json_body, verify=self.verify, params=params, timeout=DEFAULT_REQUEST_TIMEOUT
             )
         except Exception as e:
             return action_result.set_status(phantom.APP_ERROR, "Error connecting to server. {}".format(str(e))), None
@@ -303,8 +307,10 @@ class FP_Connector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. {0}".format(str(e))), None
 
         if not resp_json:
-            return action_result.set_status(phantom.APP_ERROR,
-                "Status code: {}. Received empty response from the server".format(result.status_code)), None
+            return (
+                action_result.set_status(phantom.APP_ERROR, f"Status code: {result.status_code}. Received empty response from the server"),
+                None,
+            )
 
         return phantom.APP_SUCCESS, resp_json
 
@@ -333,16 +339,17 @@ class FP_Connector(BaseConnector):
         from the ip parameter value.
         """
         ip_and_mask = self.destination_network.split("/")
-        if len(ip_and_mask) == 1 or (self.ip_version == 4 and int(ip_and_mask[1]) == 32) or \
-                (self.ip_version == 6 and int(ip_and_mask[1]) == 128):
+        if (
+            len(ip_and_mask) == 1  # noqa
+            or (self.ip_version == 4 and int(ip_and_mask[1]) == 32)  # noqa
+            or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)  # noqa
+        ):
             self.debug_print("IP is type Host")
-            self.destination_dict = {"type": "Host",
-                                     "value": "{0}".format(self.destination_network)}
+            self.destination_dict = {"type": "Host", "value": str(self.destination_network)}
         elif len(ip_and_mask) == 2:
             self.debug_print("IP is type Network")
-            self.destination_dict = {"type": "Network",
-                                     "value": "{0}".format(self.destination_network)}
-        self.debug_print("Network Dictionary: {0}".format(self.destination_dict))
+            self.destination_dict = {"type": "Network", "value": str(self.destination_network)}
+        self.debug_print("Network Dictionary: {str(self.destination_dict)}")
 
     def _deploy_config(self, action_result):
         """
@@ -452,11 +459,7 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.append(self.destination_dict)
 
-        body = {
-            "id": self.netgroup_uuid,
-            "name": self.network_group_object,
-            "literals": (self.network_group_list)
-        }
+        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
@@ -493,11 +496,7 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.remove(self.destination_dict)
 
-        body = {
-            "id": self.netgroup_uuid,
-            "name": self.network_group_object,
-            "literals": (self.network_group_list)
-        }
+        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
@@ -532,7 +531,7 @@ class FP_Connector(BaseConnector):
             "test_connectivity": self._handle_test_connectivity,
             "list_networks": self._handle_list_networks,
             "block_ip": self._handle_block_ip,
-            "unblock_ip": self._handle_unblock_ip
+            "unblock_ip": self._handle_unblock_ip,
         }
 
         run_action = supported_actions[action_id]

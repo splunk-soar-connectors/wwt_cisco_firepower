@@ -12,7 +12,7 @@
     "product_vendor": "Cisco Systems",
     "product_name": "Cisco Firepower",
     "product_version_regex": ".*",
-    "min_phantom_version": "5.2.0",
+    "min_phantom_version": "6.2.2",
     "python_version": "3",
     "logo": "logo_cisco.svg",
     "logo_dark": "logo_cisco_dark.svg",
