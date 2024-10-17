@@ -1,2 +1,1 @@
 **Unreleased**
-* Fixed pagination error in test connectivity when getting network groups [PAPP-34815]

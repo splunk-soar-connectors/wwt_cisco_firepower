@@ -2,7 +2,7 @@
 # Cisco Firepower
 
 Publisher: Splunk  
-Connector Version: 2.0.1  
+Connector Version: 2.0.2  
 Product Vendor: Cisco Systems  
 Product Name: Cisco Firepower  
 Product Version Supported (regex): ".\*"  
