@@ -2,11 +2,11 @@
 # Cisco Firepower
 
 Publisher: Splunk  
-Connector Version: 2.0.1  
+Connector Version: 2.0.2  
 Product Vendor: Cisco Systems  
 Product Name: Cisco Firepower  
 Product Version Supported (regex): ".\*"  
-Minimum Product Version: 5.2.0  
+Minimum Product Version: 6.2.2  
 
 This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL
 
