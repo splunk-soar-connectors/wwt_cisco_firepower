@@ -71,6 +71,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [list networks](#action-list-networks) - Lists currently blocked networks  
 [block ip](#action-block-ip) - Blocks an IP network  
 [unblock ip](#action-unblock-ip) - Unblocks an IP network  
+[list deployable devices](#action-list-deployable-devices) - Lists current appliances and compoennts ready to be deployed within the enviornemnt  
 
 ## action: 'test connectivity'
 Validate the asset configuration for connectivity
@@ -113,6 +114,7 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip** |  required  | IP/network to block (X.X.X.X/NM) | string |  `ip`  `ip network` 
+**devices** |  optional  | Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices | string | 
 
 #### Action Output
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
@@ -135,6 +137,7 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip** |  required  | IP/network to unBlock (X.X.X.X/NM) | string |  `ip`  `ip network` 
+**devices** |  optional  | Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices | string | 
 
 #### Action Output
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
@@ -144,5 +147,24 @@ action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.1
 action_result.data | string |  |  
 action_result.summary | string |  |  
 action_result.message | string |  |   Successfully deleted 10.10.10.10 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
+
+## action: 'list deployable devices'
+Lists current appliances and compoennts ready to be deployed within the enviornemnt
+
+Type: **investigate**  
+Read only: **True**
+
+#### Action Parameters
+No parameters are required for this action
+
+#### Action Output
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.data.\*.device | string |  |   123e4567-e89b-12d3-a456-426614174000 
+action_result.summary.total_deployable_devices | numeric |  |   2 
+action_result.message | string |  |   Total devices: 2 
 summary.total_objects | numeric |  |   1 
 summary.total_objects_successful | numeric |  |   1 
