@@ -154,6 +154,13 @@
                     "primary": true,
                     "required": true,
                     "order": 0
+                },
+                "devices": {
+                    "description": "Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices",
+                    "data_type": "string",
+                    "primary": true,
+                    "required": false,
+                    "order": 1
                 }
             },
             "render": {
@@ -237,6 +244,13 @@
                     "primary": true,
                     "required": true,
                     "order": 0
+                },
+                "devices": {
+                    "description": "Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices",
+                    "data_type": "string",
+                    "primary": true,
+                    "required": false,
+                    "order": 1
                 }
             },
             "render": {
@@ -301,6 +315,68 @@
                 }
             ],
             "versions": "EQ(*)"
+        },
+        {
+            "action": "list deployable devices",
+            "description": "Lists current appliances and compoennts ready to be deployed within the enviornemnt",
+            "type": "investigate",
+            "identifier": "list_devices",
+            "read_only": true,
+            "parameters": {},
+            "render": {
+                "width": 12,
+                "title": "Deployable Devices",
+                "type": "table",
+                "height": 20
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.device",
+                    "data_type": "string",
+                    "column_name": "Deployable Device",
+                    "column_order": 0,
+                    "example_values": [
+                        "123e4567-e89b-12d3-a456-426614174000"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.total_deployable_devices",
+                    "data_type": "numeric",
+                    "example_values": [
+                        2
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Total devices: 2"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "versions": "EQ(*)"
         }
     ],
     "pip_dependencies": {
@@ -323,7 +399,7 @@
             },
             {
                 "module": "simplejson",
-                "input_file": "wheels/py39/simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+                "input_file": "wheels/py39/simplejson-3.19.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
             }
         ]
     }
