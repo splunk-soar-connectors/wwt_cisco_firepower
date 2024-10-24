@@ -16,6 +16,7 @@
 HOST_NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups/{1}"
 DEPLOYMENT_REQUESTS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deploymentrequests"
 DEPLOYABLE_DEVICES_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deployabledevices?limit={1}&expanded={2}"
+DEVICE_RECORDS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/devices/devicerecords"
 NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups"
 TOKEN_ENDPOINT = "/api/fmc_platform/v1/auth/generatetoken"
 HEADERS = {"Accept": "application/json"}

@@ -370,9 +370,7 @@ class FP_Connector(BaseConnector):
         else:
             for device in devices:
                 if device in deployable_device_UUIDs:
-                    filtered_devices.append(devices)
-
-        self.debug_print(f"deploying config to these devices {filtered_devices}")
+                    filtered_devices.append(device)
 
         self.api_path = DEPLOYMENT_REQUESTS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
@@ -523,18 +521,32 @@ class FP_Connector(BaseConnector):
         """
         This method lists all the deployable devices on a network.
         """
-        # Add an action result to the App Run
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
 
-        ret_val = self._get_firepower_deployable_devices(action_result)
-        if phantom.is_fail(ret_val):
-            return action_result.get_status()
+        get_deployables = param["get_deployable_devices"]
 
-        for device in self.firepower_deployable_devices:
-            action_result.add_data({"device": device["id"]})
+        if get_deployables:
+            ret_val = self._get_firepower_deployable_devices(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            for device in self.firepower_deployable_devices:
+                action_result.add_data(device)
+        else:
+            self.api_path = DEVICE_RECORDS_ENDPOINT.format(self.domain_uuid)
+            ret_val, response = self._api_run("get", self.api_path, action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            try:
+                items = response.get("items")
+                for item in items:
+                    action_result.add_data({"name": item["name"], "id": item["id"]})
+            except Exception as e:
+                message = "An error occurred while processing devicess"
+                self.debug_print("{}. {}".format(message, str(e)))
+                return action_result.set_status(phantom.APP_ERROR, message)
 
-        summary = {"total_deployable_devices": len(self.firepower_deployable_devices)}
+        summary = {"total_devices": len(action_result.get_data())}
         action_result.update_summary(summary)
 
         return action_result.set_status(phantom.APP_SUCCESS)

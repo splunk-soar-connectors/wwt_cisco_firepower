@@ -317,15 +317,27 @@
             "versions": "EQ(*)"
         },
         {
-            "action": "list deployable devices",
-            "description": "Lists current appliances and compoennts ready to be deployed within the enviornemnt",
+            "action": "list devices",
+            "description": "Lists current appliances and compoennts within the enviornemnt",
             "type": "investigate",
             "identifier": "list_devices",
             "read_only": true,
-            "parameters": {},
+            "parameters": {
+                "get_deployable_devices": {
+                    "description": "Only fetches devices that are ready to be deployed",
+                    "data_type": "boolean",
+                    "order": 0,
+                    "default": false,
+                    "example_values": [
+                        true,
+                        false
+                    ],
+                    "primary": true
+                }
+            },
             "render": {
                 "width": 12,
-                "title": "Deployable Devices",
+                "title": "Devices",
                 "type": "table",
                 "height": 20
             },
@@ -339,12 +351,21 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.device",
+                    "data_path": "action_result.data.*.id",
                     "data_type": "string",
-                    "column_name": "Deployable Device",
+                    "column_name": "Device Id",
                     "column_order": 0,
                     "example_values": [
                         "123e4567-e89b-12d3-a456-426614174000"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.name",
+                    "data_type": "string",
+                    "column_name": "Device Name",
+                    "column_order": 1,
+                    "example_values": [
+                        "10.1.17.248"
                     ]
                 },
                 {
