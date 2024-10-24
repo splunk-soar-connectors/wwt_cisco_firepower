@@ -121,6 +121,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string |  |   success  failed 
 action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.parameter.devices | string |  |  
 action_result.data | string |  |  
 action_result.summary | string |  |  
 action_result.message | string |  |   Successfully added 10.10.10.10 
@@ -144,6 +145,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string |  |   success  failed 
 action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.parameter.devices | string |  |  
 action_result.data | string |  |  
 action_result.summary | string |  |  
 action_result.message | string |  |   Successfully deleted 10.10.10.10 
