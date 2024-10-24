@@ -524,7 +524,7 @@ class FP_Connector(BaseConnector):
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
 
-        get_deployables = param["get_deployable_devices"]
+        get_deployables = param.get("get_deployable_devices", False)
 
         if get_deployables:
             ret_val = self._get_firepower_deployable_devices(action_result)

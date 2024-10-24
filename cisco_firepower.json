@@ -195,6 +195,12 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.parameter.devices",
+                    "data_type": "string",
+                    "column_name": "Devices",
+                    "column_order": 2
+                },
+                {
                     "data_path": "action_result.data",
                     "data_type": "string"
                 },
@@ -283,6 +289,12 @@
                         "10.10.10.10",
                         "10.10.0.0/16"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.devices",
+                    "data_type": "string",
+                    "column_name": "Devices",
+                    "column_order": 2
                 },
                 {
                     "data_path": "action_result.data",
@@ -420,7 +432,7 @@
             },
             {
                 "module": "simplejson",
-                "input_file": "wheels/py39/simplejson-3.19.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+                "input_file": "wheels/py39/simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
             }
         ]
     }
