@@ -71,6 +71,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [list networks](#action-list-networks) - Lists currently blocked networks  
 [block ip](#action-block-ip) - Blocks an IP network  
 [unblock ip](#action-unblock-ip) - Unblocks an IP network  
+[list devices](#action-list-devices) - Lists current appliances and compoennts within the enviornemnt  
 
 ## action: 'test connectivity'
 Validate the asset configuration for connectivity
@@ -113,12 +114,14 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip** |  required  | IP/network to block (X.X.X.X/NM) | string |  `ip`  `ip network` 
+**devices** |  optional  | Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices | string | 
 
 #### Action Output
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string |  |   success  failed 
 action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.parameter.devices | string |  |  
 action_result.data | string |  |  
 action_result.summary | string |  |  
 action_result.message | string |  |   Successfully added 10.10.10.10 
@@ -135,14 +138,38 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **ip** |  required  | IP/network to unBlock (X.X.X.X/NM) | string |  `ip`  `ip network` 
+**devices** |  optional  | Comma seperated list of devices to deploy to. If nothing is specified, changes will deploy to all devices | string | 
 
 #### Action Output
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string |  |   success  failed 
 action_result.parameter.ip | string |  `ip`  `ip network`  |   10.10.10.10  10.10.0.0/16 
+action_result.parameter.devices | string |  |  
 action_result.data | string |  |  
 action_result.summary | string |  |  
 action_result.message | string |  |   Successfully deleted 10.10.10.10 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
+
+## action: 'list devices'
+Lists current appliances and compoennts within the enviornemnt
+
+Type: **investigate**  
+Read only: **True**
+
+#### Action Parameters
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**get_deployable_devices** |  optional  | Only fetches devices that are ready to be deployed | boolean | 
+
+#### Action Output
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.data.\*.id | string |  |   123e4567-e89b-12d3-a456-426614174000 
+action_result.data.\*.name | string |  |   10.1.17.248 
+action_result.summary.total_devices | numeric |  |   2 
+action_result.message | string |  |   Total devices: 2 
 summary.total_objects | numeric |  |   1 
 summary.total_objects_successful | numeric |  |   1 

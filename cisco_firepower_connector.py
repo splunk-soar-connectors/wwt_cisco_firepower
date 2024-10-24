@@ -351,7 +351,7 @@ class FP_Connector(BaseConnector):
             self.destination_dict = {"type": "Network", "value": str(self.destination_network)}
         self.debug_print("Network Dictionary: {str(self.destination_dict)}")
 
-    def _deploy_config(self, action_result):
+    def _deploy_config(self, action_result, devices=[]):
         """
         This method creates a deploy request for the deployable devices present in the firepower_deployable_devices list.
         """
@@ -364,6 +364,13 @@ class FP_Connector(BaseConnector):
             return phantom.APP_SUCCESS
 
         deployable_device_UUIDs = [device["id"] for device in self.firepower_deployable_devices]
+        filtered_devices = []
+        if len(devices) == 0:
+            filtered_devices = deployable_device_UUIDs
+        else:
+            for device in devices:
+                if device in deployable_device_UUIDs:
+                    filtered_devices.append(device)
 
         self.api_path = DEPLOYMENT_REQUESTS_ENDPOINT.format(self.domain_uuid)
         self.debug_print("api_path: {0}".format(self.api_path))
@@ -373,7 +380,7 @@ class FP_Connector(BaseConnector):
             "version": "0",
             "forceDeploy": True,
             "ignoreWarning": True,
-            "deviceList": (deployable_device_UUIDs),
+            "deviceList": (filtered_devices),
         }
 
         ret_val, response = self._api_run("post", self.api_path, action_result, body)
@@ -448,6 +455,7 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         self.destination_network = param["ip"]
+        deployable_devices = [item.strip() for item in param.get("devices", "").split(",") if item.strip()]
 
         if self._validate_ip():
             self._gen_network_dict()
@@ -465,7 +473,7 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        ret_val = self._deploy_config(action_result)
+        ret_val = self._deploy_config(action_result, deployable_devices)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
@@ -485,6 +493,7 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         self.destination_network = param["ip"]
+        deployable_devices = [item.strip() for item in param.get("devices", "").split(",") if item.strip()]
 
         if self._validate_ip():
             self._gen_network_dict()
@@ -502,11 +511,45 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        ret_val = self._deploy_config(action_result)
+        ret_val = self._deploy_config(action_result, deployable_devices)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted {0}".format(self.destination_network))
+
+    def _handle_list_devices(self, param):
+        """
+        This method lists all the deployable devices on a network.
+        """
+        action_result = ActionResult(dict(param))
+        self.add_action_result(action_result)
+
+        get_deployables = param.get("get_deployable_devices", False)
+
+        if get_deployables:
+            ret_val = self._get_firepower_deployable_devices(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            for device in self.firepower_deployable_devices:
+                action_result.add_data(device)
+        else:
+            self.api_path = DEVICE_RECORDS_ENDPOINT.format(self.domain_uuid)
+            ret_val, response = self._api_run("get", self.api_path, action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            try:
+                items = response.get("items")
+                for item in items:
+                    action_result.add_data({"name": item["name"], "id": item["id"]})
+            except Exception as e:
+                message = "An error occurred while processing devicess"
+                self.debug_print("{}. {}".format(message, str(e)))
+                return action_result.set_status(phantom.APP_ERROR, message)
+
+        summary = {"total_devices": len(action_result.get_data())}
+        action_result.update_summary(summary)
+
+        return action_result.set_status(phantom.APP_SUCCESS)
 
     def handle_action(self, param):
         """
@@ -532,6 +575,7 @@ class FP_Connector(BaseConnector):
             "list_networks": self._handle_list_networks,
             "block_ip": self._handle_block_ip,
             "unblock_ip": self._handle_unblock_ip,
+            "list_devices": self._handle_list_devices,
         }
 
         run_action = supported_actions[action_id]
