@@ -169,7 +169,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 action_result.status | string |  |   success  failed 
 action_result.data.\*.id | string |  |   123e4567-e89b-12d3-a456-426614174000 
 action_result.data.\*.name | string |  |   10.1.17.248 
-action_result.summary.total_devices | numeric |  |   2 
+action_result.summary.total_deployable_devices | numeric |  |   2 
 action_result.message | string |  |   Total devices: 2 
 summary.total_objects | numeric |  |   1 
 summary.total_objects_successful | numeric |  |   1 
