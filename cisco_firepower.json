@@ -381,7 +381,7 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.summary.total_devices",
+                    "data_path": "action_result.summary.total_deployable_devices",
                     "data_type": "numeric",
                     "example_values": [
                         2
@@ -432,7 +432,7 @@
             },
             {
                 "module": "simplejson",
-                "input_file": "simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+                "input_file": "wheels/py39/simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
             }
         ]
     }
