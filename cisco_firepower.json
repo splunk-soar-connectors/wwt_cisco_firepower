@@ -1,11 +1,11 @@
 {
-    "appid": "F501CF42-46D4-4023-A156-208640865AA8",
+    "appid": "f501cf42-46d4-4023-a156-208640865aa8",
     "name": "Cisco Firepower",
     "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
     "publisher": "Splunk",
     "package_name": "phantom_cisco_firepower",
     "type": "firewall",
-    "license": "Copyright (c) 2016-2024 Splunk Inc.",
+    "license": "Copyright (c) 2016-2025 Splunk Inc.",
     "main_module": "cisco_firepower_connector.py",
     "app_version": "2.0.2",
     "utctime_updated": "2024-10-17T23:13:40.000000Z",
