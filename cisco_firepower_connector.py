@@ -1,6 +1,6 @@
 # File: cisco_firepower_connector.py
 #
-# Copyright (c) 2016-2024 Splunk Inc.
+# Copyright (c) 2016-2025 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,13 +25,12 @@ from cisco_firepower_consts import *
 
 
 class FP_Connector(BaseConnector):
-
     def __init__(self):
         """
         Instance variables
         """
         # Call the BaseConnectors init first
-        super(FP_Connector, self).__init__()
+        super().__init__()
 
         self.username = ""
         self.password = ""
@@ -86,7 +85,7 @@ class FP_Connector(BaseConnector):
                 self.debug_print("Decrypting the token")
                 self._state[TOKEN_KEY] = encryption_helper.decrypt(self._state[TOKEN_KEY], self.asset_id)
         except Exception as e:
-            self.debug_print("Error occurred while decrypting the token: {}".format(str(e)))
+            self.debug_print(f"Error occurred while decrypting the token: {e!s}")
             self._reset_state_file()
 
         self.firepower_host = config["firepower_host"]
@@ -124,7 +123,7 @@ class FP_Connector(BaseConnector):
                 self.debug_print("Encrypting the token")
                 self._state[TOKEN_KEY] = encryption_helper.encrypt(self._state[TOKEN_KEY], self.asset_id)
         except Exception as e:
-            self.debug_print("{}: {}".format(ENCRYPTION_ERR, str(e)))
+            self.debug_print(f"{ENCRYPTION_ERR}: {e!s}")
             self._reset_state_file()
 
         self.save_state(self._state)
@@ -137,7 +136,7 @@ class FP_Connector(BaseConnector):
         the netgroup_uuid variable.
         """
         self.api_path = NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid)
-        self.debug_print("api_path: {0}".format(self.api_path))
+        self.debug_print(f"api_path: {self.api_path}")
 
         offset = 0
         limit = 50
@@ -156,7 +155,7 @@ class FP_Connector(BaseConnector):
                         self.netgroup_uuid = item["id"]
             except Exception as e:
                 message = "An error occurred while processing network groups"
-                self.debug_print(f"{message}. {str(e)}")
+                self.debug_print(f"{message}. {e!s}")
                 return self.set_status(phantom.APP_ERROR, message)
 
             if self.netgroup_uuid:
@@ -177,7 +176,7 @@ class FP_Connector(BaseConnector):
         """
         # Get the current list of static routes from the Target Host
         self.api_path = HOST_NETWORK_GROUPS_ENDPOINT.format(self.domain_uuid, self.netgroup_uuid)
-        self.debug_print("api_path: {0}".format(self.api_path))
+        self.debug_print(f"api_path: {self.api_path}")
 
         ret_val, response = self._api_run("get", self.api_path, action_result)
         if phantom.is_fail(ret_val):
@@ -193,7 +192,7 @@ class FP_Connector(BaseConnector):
         """
         # Get the current list of devices in the domain
         self.api_path = DEPLOYABLE_DEVICES_ENDPOINT.format(self.domain_uuid, LIMIT, EXPANDED)
-        self.debug_print("api_path: {0}".format(self.api_path))
+        self.debug_print(f"api_path: {self.api_path}")
 
         ret_val, response = self._api_run("get", self.api_path, action_result)
         if phantom.is_fail(ret_val):
@@ -208,7 +207,7 @@ class FP_Connector(BaseConnector):
                 self.firepower_deployable_devices.append({"name": item["device"]["name"], "id": item["device"]["id"]})
         except Exception as e:
             message = "An error occurred while processing deployable devices"
-            self.debug_print("{}. {}".format(message, str(e)))
+            self.debug_print(f"{message}. {e!s}")
             return action_result.set_status(phantom.APP_ERROR, message)
 
         return phantom.APP_SUCCESS
@@ -267,7 +266,7 @@ class FP_Connector(BaseConnector):
         This method makes a REST call to the API
         """
         request_method = getattr(requests, method)
-        url = "https://{0}{1}".format(self.firepower_host, resource)
+        url = f"https://{self.firepower_host}{resource}"
         if json_body:
             self.headers.update({"Content-type": "application/json"})
 
@@ -281,7 +280,7 @@ class FP_Connector(BaseConnector):
                 url, auth=auth, headers=self.headers, json=json_body, verify=self.verify, params=params, timeout=DEFAULT_REQUEST_TIMEOUT
             )
         except Exception as e:
-            return action_result.set_status(phantom.APP_ERROR, "Error connecting to server. {}".format(str(e))), None
+            return action_result.set_status(phantom.APP_ERROR, f"Error connecting to server. {e!s}"), None
 
         if not (200 <= result.status_code < 399):
             if result.status_code == 401 and first_try:
@@ -291,7 +290,7 @@ class FP_Connector(BaseConnector):
 
                 return self._api_run(method, resource, action_result, json_body, headers_only, first_try=False)
 
-            message = "Error from server. Status Code: {0} Data from server: {1}".format(
+            message = "Error from server. Status Code: {} Data from server: {}".format(
                 result.status_code, result.text.replace("{", "{{").replace("}", "}}")
             )
 
@@ -304,7 +303,7 @@ class FP_Connector(BaseConnector):
         try:
             resp_json = result.json()
         except Exception as e:
-            return action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. {0}".format(str(e))), None
+            return action_result.set_status(phantom.APP_ERROR, f"Unable to parse JSON response. {e!s}"), None
 
         if not resp_json:
             return (
@@ -330,7 +329,7 @@ class FP_Connector(BaseConnector):
         except Exception:
             return False
         if ip_net.network != ip_net.ip:
-            self.destination_network = "{0}/{1}".format(ip_net.network, ip_net.prefixlen)
+            self.destination_network = f"{ip_net.network}/{ip_net.prefixlen}"
         return True
 
     def _gen_network_dict(self):
@@ -340,9 +339,9 @@ class FP_Connector(BaseConnector):
         """
         ip_and_mask = self.destination_network.split("/")
         if (
-            len(ip_and_mask) == 1  # noqa
-            or (self.ip_version == 4 and int(ip_and_mask[1]) == 32)  # noqa
-            or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)  # noqa
+            len(ip_and_mask) == 1
+            or (self.ip_version == 4 and int(ip_and_mask[1]) == 32)
+            or (self.ip_version == 6 and int(ip_and_mask[1]) == 128)
         ):
             self.debug_print("IP is type Host")
             self.destination_dict = {"type": "Host", "value": str(self.destination_network)}
@@ -366,7 +365,7 @@ class FP_Connector(BaseConnector):
         deployable_device_UUIDs = [device["id"] for device in self.firepower_deployable_devices]
 
         self.api_path = DEPLOYMENT_REQUESTS_ENDPOINT.format(self.domain_uuid)
-        self.debug_print("api_path: {0}".format(self.api_path))
+        self.debug_print(f"api_path: {self.api_path}")
 
         body = {
             "type": "DeploymentRequest",
@@ -407,7 +406,7 @@ class FP_Connector(BaseConnector):
         This method lists currently blocked networks
         of a network group.
         """
-        self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
 
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
@@ -424,7 +423,7 @@ class FP_Connector(BaseConnector):
                     action_result.add_data({"network": net["value"]})
         except Exception as e:
             message = "An error occurred while processing the networks"
-            self.debug_print("{}. {}".format(message, str(e)))
+            self.debug_print(f"{message}. {e!s}")
             return action_result.set_status(phantom.APP_ERROR, message)
 
         summary = {"total_routes": len(self.network_group_list)}
@@ -436,7 +435,7 @@ class FP_Connector(BaseConnector):
         """
         This method blocks an IP/network.
         """
-        self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
 
         # Add an action result to the App Run
         action_result = ActionResult(dict(param))
@@ -452,10 +451,10 @@ class FP_Connector(BaseConnector):
         if self._validate_ip():
             self._gen_network_dict()
         else:
-            return action_result.set_status(phantom.APP_ERROR, "Invalid IP: {0}".format(self.destination_network))
+            return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
         if self.destination_dict in self.network_group_list:
-            return action_result.set_status(phantom.APP_SUCCESS, "{0} is already present in the blocklist".format(self.destination_network))
+            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is already present in the blocklist")
 
         self.network_group_list.append(self.destination_dict)
 
@@ -469,7 +468,7 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully added {0}".format(self.destination_network))
+        return action_result.set_status(phantom.APP_SUCCESS, f"Successfully added {self.destination_network}")
 
     def _handle_unblock_ip(self, param):
         """
@@ -489,10 +488,10 @@ class FP_Connector(BaseConnector):
         if self._validate_ip():
             self._gen_network_dict()
         else:
-            return action_result.set_status(phantom.APP_ERROR, "Invalid IP: {0}".format(self.destination_network))
+            return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
         if self.destination_dict not in self.network_group_list:
-            return action_result.set_status(phantom.APP_SUCCESS, "{0} is not present in the blocklist".format(self.destination_network))
+            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is not present in the blocklist")
 
         self.network_group_list.remove(self.destination_dict)
 
@@ -506,7 +505,7 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted {0}".format(self.destination_network))
+        return action_result.set_status(phantom.APP_SUCCESS, f"Successfully deleted {self.destination_network}")
 
     def handle_action(self, param):
         """
@@ -525,7 +524,7 @@ class FP_Connector(BaseConnector):
         """
         # action_id determines what function to execute
         action_id = self.get_action_identifier()
-        self.debug_print("action_id: {}".format(action_id))
+        self.debug_print(f"action_id: {action_id}")
 
         supported_actions = {
             "test_connectivity": self._handle_test_connectivity,
@@ -540,7 +539,6 @@ class FP_Connector(BaseConnector):
 
 
 if __name__ == "__main__":
-
     import sys
 
     if len(sys.argv) < 2:
