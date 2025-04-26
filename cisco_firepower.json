@@ -1,5 +1,5 @@
 {
-    "appid": "f501cf42-46d4-4023-a156-208640865aa8",
+    "appid": "F501CF42-46D4-4023-A156-208640865AA8",
     "name": "Cisco Firepower",
     "description": "This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL",
     "publisher": "Splunk",
@@ -324,6 +324,18 @@
             {
                 "module": "simplejson",
                 "input_file": "wheels/py39/simplejson-3.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            }
+        ]
+    },
+    "pip313_dependencies": {
+        "wheel": [
+            {
+                "module": "netaddr",
+                "input_file": "wheels/shared/netaddr-0.7.18-py2.py3-none-any.whl"
+            },
+            {
+                "module": "simplejson",
+                "input_file": "wheels/py313/simplejson-3.17.2-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_28_x86_64.whl"
             }
         ]
     }
