@@ -1,7 +1,7 @@
 # Cisco Firepower
 
 Publisher: Splunk \
-Connector Version: 2.0.2 \
+Connector Version: 2.0.3 \
 Product Vendor: Cisco Systems \
 Product Name: Cisco Firepower \
 Minimum Product Version: 6.2.2
