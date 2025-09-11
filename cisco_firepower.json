@@ -319,7 +319,7 @@
         "wheel": [
             {
                 "module": "netaddr",
-                "input_file": "wheels/shared/netaddr-0.7.18-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/netaddr-0.10.1-py2.py3-none-any.whl"
             },
             {
                 "module": "simplejson",
@@ -331,7 +331,7 @@
         "wheel": [
             {
                 "module": "netaddr",
-                "input_file": "wheels/shared/netaddr-0.7.18-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/netaddr-0.10.1-py2.py3-none-any.whl"
             },
             {
                 "module": "simplejson",

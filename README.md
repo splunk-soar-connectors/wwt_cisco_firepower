@@ -1,9 +1,9 @@
 # Cisco Firepower
 
-Publisher: Splunk \
-Connector Version: 2.0.3 \
-Product Vendor: Cisco Systems \
-Product Name: Cisco Firepower \
+Publisher: Splunk <br>
+Connector Version: 2.0.3 <br>
+Product Vendor: Cisco Systems <br>
+Product Name: Cisco Firepower <br>
 Minimum Product Version: 6.2.2
 
 This app interfaces with Cisco Firepower devices to add or remove IPs or networks to a Firepower Network Group Object, which is configured with an ACL
@@ -52,16 +52,16 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 ### Supported Actions
 
-[test connectivity](#action-test-connectivity) - Validate the asset configuration for connectivity \
-[list networks](#action-list-networks) - Lists currently blocked networks \
-[block ip](#action-block-ip) - Blocks an IP network \
+[test connectivity](#action-test-connectivity) - Validate the asset configuration for connectivity <br>
+[list networks](#action-list-networks) - Lists currently blocked networks <br>
+[block ip](#action-block-ip) - Blocks an IP network <br>
 [unblock ip](#action-unblock-ip) - Unblocks an IP network
 
 ## action: 'test connectivity'
 
 Validate the asset configuration for connectivity
 
-Type: **test** \
+Type: **test** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -76,7 +76,7 @@ No Output
 
 Lists currently blocked networks
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -98,7 +98,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Blocks an IP network
 
-Type: **contain** \
+Type: **contain** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -123,7 +123,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Unblocks an IP network
 
-Type: **correct** \
+Type: **correct** <br>
 Read only: **False**
 
 #### Action Parameters
