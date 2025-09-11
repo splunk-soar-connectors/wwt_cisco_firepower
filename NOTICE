@@ -4,15 +4,6 @@ Third Party Software Attributions:
 
 @@@@============================================================================
 
-Library: netaddr - 0.7.18
-Homepage: https://github.com/drkjam/netaddr/
-License: BSD License; MIT License
-License Text:
-
-Please navigate to https://github.com/drkjam/netaddr/ to obtain a copy of the license.
-
-@@@@============================================================================
-
 Library: simplejson - 3.17.2
 Homepage: https://github.com/simplejson/simplejson
 License: Academic Free License (AFL); MIT License
