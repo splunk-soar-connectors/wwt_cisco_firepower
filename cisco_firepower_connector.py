@@ -141,7 +141,7 @@ class FP_Connector(BaseConnector):
         offset = 0
         limit = 50
         params = {"limit": limit}
-        while True:
+        for _page_number in range(MAX_NETWORK_GROUP_PAGES):
             params["offset"] = offset
             ret_val, response = self._api_run("get", self.api_path, self, params=params)
             if phantom.is_fail(ret_val):
@@ -164,9 +164,12 @@ class FP_Connector(BaseConnector):
             if "paging" in response and "next" in response["paging"]:
                 offset += limit
             else:
-                break
+                return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
-        return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
+        return self.set_status(
+            phantom.APP_ERROR,
+            f"Network group object not found after scanning {MAX_NETWORK_GROUP_PAGES} pages; aborting the lookup",
+        )
 
     def _get_group_object_networks(self, action_result):
         """

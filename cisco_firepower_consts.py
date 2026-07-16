@@ -27,3 +27,4 @@ DOMAIN_NAME_KEY = "domain_name"
 ENCRYPTION_ERR = "Error occurred while encrypting the state file"
 LIMIT = 100
 EXPANDED = "true"
+MAX_NETWORK_GROUP_PAGES = 2000
