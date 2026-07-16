@@ -44,6 +44,7 @@ class FP_Connector(BaseConnector):
         self.token = ""
         self.api_path = ""
         self.network_group_list = []
+        self.network_group_objects = []
         self.domain_uuid = ""
         self.netgroup_uuid = ""
         self.headers = HEADERS
@@ -186,6 +187,7 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         self.network_group_list = response.get("literals", [])
+        self.network_group_objects = response.get("objects", [])
         return phantom.APP_SUCCESS
 
     def _get_firepower_deployable_devices(self, action_result):
@@ -461,7 +463,12 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.append(self.destination_dict)
 
-        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
+        body = {
+            "id": self.netgroup_uuid,
+            "name": self.network_group_object,
+            "literals": self.network_group_list,
+            "objects": self.network_group_objects,
+        }
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
@@ -498,7 +505,12 @@ class FP_Connector(BaseConnector):
 
         self.network_group_list.remove(self.destination_dict)
 
-        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
+        body = {
+            "id": self.netgroup_uuid,
+            "name": self.network_group_object,
+            "literals": self.network_group_list,
+            "objects": self.network_group_objects,
+        }
 
         ret_val, _ = self._api_run("put", self.api_path, action_result, body)
         if phantom.is_fail(ret_val):
