@@ -516,7 +516,13 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         if not changed:
-            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is already present in the blocklist")
+            ret_val = self._deploy_config(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            return action_result.set_status(
+                phantom.APP_SUCCESS,
+                f"{self.destination_network} is already present in the blocklist; pending configuration was deployed",
+            )
 
         ret_val = self._deploy_config(action_result)
         if phantom.is_fail(ret_val):
@@ -544,7 +550,13 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         if not changed:
-            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is not present in the blocklist")
+            ret_val = self._deploy_config(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            return action_result.set_status(
+                phantom.APP_SUCCESS,
+                f"{self.destination_network} is not present in the blocklist; pending configuration was deployed",
+            )
 
         ret_val = self._deploy_config(action_result)
         if phantom.is_fail(ret_val):
