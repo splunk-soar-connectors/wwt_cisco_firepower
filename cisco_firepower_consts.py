@@ -1,6 +1,6 @@
 # File: cisco_firepower_consts.py
 #
-# Copyright (c) 2016-2025 Splunk Inc.
+# Copyright (c) 2016-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
 
 HOST_NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups/{1}"
 DEPLOYMENT_REQUESTS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deploymentrequests"
+TASK_STATUS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/job/taskstatuses/{1}"
+DEPLOYMENT_POLL_INTERVAL = 6
+DEPLOYMENT_POLL_TIMEOUT = 600
 DEPLOYABLE_DEVICES_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deployabledevices?limit={1}&expanded={2}"
 NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups"
 TOKEN_ENDPOINT = "/api/fmc_platform/v1/auth/generatetoken"
@@ -27,3 +30,4 @@ DOMAIN_NAME_KEY = "domain_name"
 ENCRYPTION_ERR = "Error occurred while encrypting the state file"
 LIMIT = 100
 EXPANDED = "true"
+MAX_NETWORK_GROUP_PAGES = 2000

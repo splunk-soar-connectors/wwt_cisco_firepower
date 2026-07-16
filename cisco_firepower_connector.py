@@ -1,6 +1,6 @@
 # File: cisco_firepower_connector.py
 #
-# Copyright (c) 2016-2025 Splunk Inc.
+# Copyright (c) 2016-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 # the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
+
+import time
 
 import encryption_helper
 import phantom.app as phantom
@@ -44,10 +46,11 @@ class FP_Connector(BaseConnector):
         self.token = ""
         self.api_path = ""
         self.network_group_list = []
+        self.network_group_objects = []
         self.domain_uuid = ""
         self.netgroup_uuid = ""
         self.headers = HEADERS
-        self.verify = False
+        self.verify = True
         self.nothing_to_deploy = False
         self.ip_version = None
         self.generate_new_token = False
@@ -93,7 +96,7 @@ class FP_Connector(BaseConnector):
         self.password = config["password"]
         self.domain_name = config["domain_name"].lower()
         self.network_group_object = config["network_group_object"]
-        self.verify = config.get("verify_server_cert", False)
+        self.verify = config.get("verify_server_cert", True)
 
         force = True if self.get_action_identifier() == "test_connectivity" else False
         ret_val = self._get_token(self, force=force)
@@ -141,7 +144,7 @@ class FP_Connector(BaseConnector):
         offset = 0
         limit = 50
         params = {"limit": limit}
-        while True:
+        for _page_number in range(MAX_NETWORK_GROUP_PAGES):
             params["offset"] = offset
             ret_val, response = self._api_run("get", self.api_path, self, params=params)
             if phantom.is_fail(ret_val):
@@ -164,9 +167,12 @@ class FP_Connector(BaseConnector):
             if "paging" in response and "next" in response["paging"]:
                 offset += limit
             else:
-                break
+                return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
 
-        return self.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Network Group Object' parameter")
+        return self.set_status(
+            phantom.APP_ERROR,
+            f"Network group object not found after scanning {MAX_NETWORK_GROUP_PAGES} pages; aborting the lookup",
+        )
 
     def _get_group_object_networks(self, action_result):
         """
@@ -183,6 +189,7 @@ class FP_Connector(BaseConnector):
             return action_result.get_status()
 
         self.network_group_list = response.get("literals", [])
+        self.network_group_objects = response.get("objects", [])
         return phantom.APP_SUCCESS
 
     def _get_firepower_deployable_devices(self, action_result):
@@ -288,7 +295,7 @@ class FP_Connector(BaseConnector):
                 if phantom.is_fail(ret_val):
                     return action_result.get_status(), None
 
-                return self._api_run(method, resource, action_result, json_body, headers_only, first_try=False)
+                return self._api_run(method, resource, action_result, json_body, headers_only, first_try=False, params=params)
 
             message = "Error from server. Status Code: {} Data from server: {}".format(
                 result.status_code, result.text.replace("{", "{{").replace("}", "}}")
@@ -380,8 +387,40 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        self.network_group_list = response.get("literals", [])
-        return phantom.APP_SUCCESS
+        task_id = ((response.get("metadata") or {}).get("task") or {}).get("id")
+        if not task_id:
+            return action_result.set_status(phantom.APP_ERROR, "Deployment request returned no task ID; deployment outcome is unknown")
+
+        return self._poll_deployment_task(task_id, action_result)
+
+    def _poll_deployment_task(self, task_id, action_result):
+        """Wait for a Firepower deployment task to reach a terminal state."""
+        task_path = TASK_STATUS_ENDPOINT.format(self.domain_uuid, task_id)
+        deadline = time.monotonic() + DEPLOYMENT_POLL_TIMEOUT
+
+        while time.monotonic() < deadline:
+            ret_val, response = self._api_run("get", task_path, action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Failed to retrieve deployment task {task_id}: {action_result.get_message()}",
+                )
+
+            status = str(response.get("status", "")).upper()
+            if status == "DEPLOYED":
+                return phantom.APP_SUCCESS
+            if status in ("FAILED", "ABORTED"):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Deployment task {task_id} ended with status {status}: {response.get('message', '')}",
+                )
+
+            time.sleep(DEPLOYMENT_POLL_INTERVAL)
+
+        return action_result.set_status(
+            phantom.APP_ERROR,
+            f"Timed out waiting for deployment task {task_id}; deployment outcome is unknown",
+        )
 
     def _handle_test_connectivity(self, param):
         """
@@ -431,6 +470,30 @@ class FP_Connector(BaseConnector):
 
         return action_result.set_status(phantom.APP_SUCCESS)
 
+    def _update_group_literal(self, action_result, add):
+        """Atomically add or remove the destination literal from the network group."""
+        ret_val = self._get_group_object_networks(action_result)
+        if phantom.is_fail(ret_val):
+            return action_result.get_status(), False
+
+        already_in_desired_state = (self.destination_dict in self.network_group_list) == add
+        if already_in_desired_state:
+            return phantom.APP_SUCCESS, False
+
+        body = {
+            "id": self.netgroup_uuid,
+            "type": "NetworkGroup",
+            "literals": [self.destination_dict],
+        }
+        params = {"action": "add" if add else "remove"}
+        ret_val, response = self._api_run("put", self.api_path, action_result, body, params=params)
+        if phantom.is_fail(ret_val):
+            return action_result.get_status(), False
+
+        self.network_group_list = response.get("literals", self.network_group_list)
+        self.network_group_objects = response.get("objects", self.network_group_objects)
+        return phantom.APP_SUCCESS, True
+
     def _handle_block_ip(self, param):
         """
         This method blocks an IP/network.
@@ -441,11 +504,6 @@ class FP_Connector(BaseConnector):
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
 
-        # Initializes the current networks and sets the URL
-        ret_val = self._get_group_object_networks(action_result)
-        if phantom.is_fail(ret_val):
-            return action_result.get_status()
-
         self.destination_network = param["ip"]
 
         if self._validate_ip():
@@ -453,16 +511,18 @@ class FP_Connector(BaseConnector):
         else:
             return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
-        if self.destination_dict in self.network_group_list:
-            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is already present in the blocklist")
-
-        self.network_group_list.append(self.destination_dict)
-
-        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
-
-        ret_val, _ = self._api_run("put", self.api_path, action_result, body)
+        ret_val, changed = self._update_group_literal(action_result, add=True)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
+
+        if not changed:
+            ret_val = self._deploy_config(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            return action_result.set_status(
+                phantom.APP_SUCCESS,
+                f"{self.destination_network} is already present in the blocklist; pending configuration was deployed",
+            )
 
         ret_val = self._deploy_config(action_result)
         if phantom.is_fail(ret_val):
@@ -478,11 +538,6 @@ class FP_Connector(BaseConnector):
         action_result = ActionResult(dict(param))
         self.add_action_result(action_result)
 
-        # Initializes the current networks and sets the URL
-        ret_val = self._get_group_object_networks(action_result)
-        if phantom.is_fail(ret_val):
-            return action_result.get_status()
-
         self.destination_network = param["ip"]
 
         if self._validate_ip():
@@ -490,16 +545,18 @@ class FP_Connector(BaseConnector):
         else:
             return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
-        if self.destination_dict not in self.network_group_list:
-            return action_result.set_status(phantom.APP_SUCCESS, f"{self.destination_network} is not present in the blocklist")
-
-        self.network_group_list.remove(self.destination_dict)
-
-        body = {"id": self.netgroup_uuid, "name": self.network_group_object, "literals": (self.network_group_list)}
-
-        ret_val, _ = self._api_run("put", self.api_path, action_result, body)
+        ret_val, changed = self._update_group_literal(action_result, add=False)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
+
+        if not changed:
+            ret_val = self._deploy_config(action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            return action_result.set_status(
+                phantom.APP_SUCCESS,
+                f"{self.destination_network} is not present in the blocklist; pending configuration was deployed",
+            )
 
         ret_val = self._deploy_config(action_result)
         if phantom.is_fail(ret_val):
