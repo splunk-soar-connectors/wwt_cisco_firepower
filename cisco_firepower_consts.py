@@ -15,6 +15,9 @@
 
 HOST_NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups/{1}"
 DEPLOYMENT_REQUESTS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deploymentrequests"
+TASK_STATUS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/job/taskstatuses/{1}"
+DEPLOYMENT_POLL_INTERVAL = 6
+DEPLOYMENT_POLL_TIMEOUT = 600
 DEPLOYABLE_DEVICES_ENDPOINT = "/api/fmc_config/v1/domain/{0}/deployment/deployabledevices?limit={1}&expanded={2}"
 NETWORK_GROUPS_ENDPOINT = "/api/fmc_config/v1/domain/{0}/object/networkgroups"
 TOKEN_ENDPOINT = "/api/fmc_platform/v1/auth/generatetoken"

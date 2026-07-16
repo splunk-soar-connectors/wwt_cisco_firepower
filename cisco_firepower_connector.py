@@ -13,6 +13,8 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
+import time
+
 import encryption_helper
 import phantom.app as phantom
 import requests
@@ -385,8 +387,40 @@ class FP_Connector(BaseConnector):
         if phantom.is_fail(ret_val):
             return action_result.get_status()
 
-        self.network_group_list = response.get("literals", [])
-        return phantom.APP_SUCCESS
+        task_id = ((response.get("metadata") or {}).get("task") or {}).get("id")
+        if not task_id:
+            return action_result.set_status(phantom.APP_ERROR, "Deployment request returned no task ID; deployment outcome is unknown")
+
+        return self._poll_deployment_task(task_id, action_result)
+
+    def _poll_deployment_task(self, task_id, action_result):
+        """Wait for a Firepower deployment task to reach a terminal state."""
+        task_path = TASK_STATUS_ENDPOINT.format(self.domain_uuid, task_id)
+        deadline = time.monotonic() + DEPLOYMENT_POLL_TIMEOUT
+
+        while time.monotonic() < deadline:
+            ret_val, response = self._api_run("get", task_path, action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Failed to retrieve deployment task {task_id}: {action_result.get_message()}",
+                )
+
+            status = str(response.get("status", "")).upper()
+            if status == "DEPLOYED":
+                return phantom.APP_SUCCESS
+            if status in ("FAILED", "ABORTED"):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Deployment task {task_id} ended with status {status}: {response.get('message', '')}",
+                )
+
+            time.sleep(DEPLOYMENT_POLL_INTERVAL)
+
+        return action_result.set_status(
+            phantom.APP_ERROR,
+            f"Timed out waiting for deployment task {task_id}; deployment outcome is unknown",
+        )
 
     def _handle_test_connectivity(self, param):
         """
