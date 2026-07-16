@@ -47,7 +47,7 @@ class FP_Connector(BaseConnector):
         self.domain_uuid = ""
         self.netgroup_uuid = ""
         self.headers = HEADERS
-        self.verify = False
+        self.verify = True
         self.nothing_to_deploy = False
         self.ip_version = None
         self.generate_new_token = False
@@ -93,7 +93,7 @@ class FP_Connector(BaseConnector):
         self.password = config["password"]
         self.domain_name = config["domain_name"].lower()
         self.network_group_object = config["network_group_object"]
-        self.verify = config.get("verify_server_cert", False)
+        self.verify = config.get("verify_server_cert", True)
 
         force = True if self.get_action_identifier() == "test_connectivity" else False
         ret_val = self._get_token(self, force=force)

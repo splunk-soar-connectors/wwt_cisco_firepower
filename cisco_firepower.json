@@ -31,7 +31,7 @@
             "description": "Verify server certificate",
             "data_type": "boolean",
             "order": 1,
-            "default": false
+            "default": true
         },
         "username": {
             "description": "User with access to the Firepower node",

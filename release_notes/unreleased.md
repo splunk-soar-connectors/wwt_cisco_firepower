@@ -1,3 +1,3 @@
 **Unreleased**
 
-* - Updated development checks.
+* Enabled TLS certificate verification by default for Firepower API connections.
