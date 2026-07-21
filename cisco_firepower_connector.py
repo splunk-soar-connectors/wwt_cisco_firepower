@@ -255,10 +255,9 @@ class FP_Connector(BaseConnector):
         except Exception:
             return action_result.set_status(phantom.APP_ERROR, "Received unexpected response from the server")
 
-        for domain in domains:
-            if self.domain_name in domain["name"].lower():
-                self.domain_uuid = domain["uuid"]
-                break
+        matching_domains = [domain for domain in domains if self.domain_name == str(domain.get("name", "")).lower()]
+        if len(matching_domains) == 1:
+            self.domain_uuid = matching_domains[0].get("uuid")
 
         if not self.domain_uuid:
             return action_result.set_status(phantom.APP_ERROR, "Please provide a valid value in the 'Firepower Domain' parameter")
