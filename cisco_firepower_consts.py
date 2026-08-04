@@ -28,6 +28,7 @@ DEFAULT_REQUEST_TIMEOUT = 30  # in seconds
 TOKEN_KEY = "X-auth-access-token"
 DOMAIN_UUID_KEY = "domain_uuid"
 DOMAIN_NAME_KEY = "domain_name"
+OWNED_BLOCKS_KEY = "owned_blocks"
 ENCRYPTION_ERR = "Error occurred while encrypting the state file"
 LIMIT = 100
 EXPANDED = "true"

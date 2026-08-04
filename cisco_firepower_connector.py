@@ -526,6 +526,25 @@ class FP_Connector(BaseConnector):
         self.network_group_objects = response.get("objects", self.network_group_objects)
         return phantom.APP_SUCCESS, True
 
+    def _get_owned_blocks(self, action_result):
+        """Return block values recorded for this asset and SOAR installation."""
+        try:
+            installation_id = self.get_product_installation_id()
+        except Exception as e:
+            return action_result.set_status(phantom.APP_ERROR, f"Unable to identify this SOAR installation: {e!s}"), None
+
+        if not installation_id:
+            return action_result.set_status(phantom.APP_ERROR, "Unable to identify this SOAR installation"), None
+
+        ownership = self._state.get(OWNED_BLOCKS_KEY)
+        if not isinstance(ownership, dict) or ownership.get("installation_id") != installation_id:
+            ownership = {"installation_id": installation_id, "values": []}
+            self._state[OWNED_BLOCKS_KEY] = ownership
+        elif not isinstance(ownership.get("values"), list):
+            ownership["values"] = []
+
+        return phantom.APP_SUCCESS, ownership["values"]
+
     def _handle_block_ip(self, param):
         """
         This method blocks an IP/network.
@@ -543,9 +562,16 @@ class FP_Connector(BaseConnector):
         else:
             return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
+        ret_val, owned_blocks = self._get_owned_blocks(action_result)
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
         ret_val, changed = self._update_group_literal(action_result, add=True)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
+
+        if changed and self.destination_dict["value"] not in owned_blocks:
+            owned_blocks.append(self.destination_dict["value"])
 
         if not changed:
             ret_val = self._deploy_config(action_result)
@@ -577,9 +603,21 @@ class FP_Connector(BaseConnector):
         else:
             return action_result.set_status(phantom.APP_ERROR, f"Invalid IP: {self.destination_network}")
 
+        ret_val, owned_blocks = self._get_owned_blocks(action_result)
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        if self.destination_dict["value"] not in owned_blocks:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Refusing to unblock {self.destination_network}: the entry was not created by this asset on this SOAR installation",
+            )
+
         ret_val, changed = self._update_group_literal(action_result, add=False)
         if phantom.is_fail(ret_val):
             return action_result.get_status()
+
+        owned_blocks.remove(self.destination_dict["value"])
 
         if not changed:
             ret_val = self._deploy_config(action_result)
