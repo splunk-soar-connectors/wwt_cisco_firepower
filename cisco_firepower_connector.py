@@ -198,6 +198,8 @@ class FP_Connector(BaseConnector):
         adds them to the firepower_deployable_devices variable.
         """
         # Get the current list of devices in the domain
+        self.firepower_deployable_devices = []
+        self.nothing_to_deploy = False
         self.api_path = DEPLOYABLE_DEVICES_ENDPOINT.format(self.domain_uuid, LIMIT, EXPANDED)
         self.debug_print(f"api_path: {self.api_path}")
 
@@ -218,6 +220,27 @@ class FP_Connector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR, message)
 
         return phantom.APP_SUCCESS
+
+    def _device_has_network_group_change(self, device_id, action_result):
+        """Return whether a device has a pending change for the configured network group."""
+        api_path = PENDING_CHANGES_ENDPOINT.format(self.domain_uuid, device_id)
+        params = {"expanded": EXPANDED, "filter": f"EntityUUID:{self.netgroup_uuid}"}
+        ret_val, response = self._api_run("get", api_path, action_result, params=params)
+        if phantom.is_fail(ret_val):
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Unable to verify pending changes for device {device_id}: {action_result.get_message()}",
+                ),
+                False,
+            )
+
+        items = response.get("items")
+        if not isinstance(items, list):
+            return action_result.set_status(phantom.APP_ERROR, f"Received invalid pending changes for device {device_id}"), False
+
+        network_group_id = self.netgroup_uuid.casefold()
+        return phantom.APP_SUCCESS, any(str(item.get("entityUUID", "")).casefold() == network_group_id for item in items)
 
     def _update_state(self):
         """
@@ -368,7 +391,17 @@ class FP_Connector(BaseConnector):
             self.debug_print("Nothing to deploy")
             return phantom.APP_SUCCESS
 
-        deployable_device_UUIDs = [device["id"] for device in self.firepower_deployable_devices]
+        deployable_device_UUIDs = []
+        for device in self.firepower_deployable_devices:
+            ret_val, has_network_group_change = self._device_has_network_group_change(device["id"], action_result)
+            if phantom.is_fail(ret_val):
+                return action_result.get_status()
+            if has_network_group_change:
+                deployable_device_UUIDs.append(device["id"])
+
+        if not deployable_device_UUIDs:
+            self.debug_print("No deployable device has a pending change for the configured network group")
+            return phantom.APP_SUCCESS
 
         self.api_path = DEPLOYMENT_REQUESTS_ENDPOINT.format(self.domain_uuid)
         self.debug_print(f"api_path: {self.api_path}")
@@ -376,8 +409,8 @@ class FP_Connector(BaseConnector):
         body = {
             "type": "DeploymentRequest",
             "version": "0",
-            "forceDeploy": True,
-            "ignoreWarning": True,
+            "forceDeploy": False,
+            "ignoreWarning": False,
             "deviceList": (deployable_device_UUIDs),
         }
 
